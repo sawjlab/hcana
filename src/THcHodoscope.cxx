@@ -668,7 +668,7 @@ Int_t THcHodoscope::CoarseProcess( TClonesArray&  tracks  )
   
   if (tracks.GetLast()+1 > 0 ) {
     for ( Int_t itrack = 0; itrack < Ntracks; itrack++ ) { // Line 133
-      THaTrack* theTrack = dynamic_cast<THaTrack*>( tracks.At(itrack) );
+      THaTrack* theTrack = static_cast<THaTrack*>( tracks.At(itrack) );
       if (!theTrack) return -1;
       
       beta[itrack] = 0.;
@@ -735,7 +735,14 @@ Int_t THcHodoscope::CoarseProcess( TClonesArray&  tracks  )
 	  yhitCoord = theTrack->GetY() + theTrack->GetPhi() *
 	    ( fPlanes[ip]->GetZpos() +
 	      ( hitPaddle % 2 ) * fPlanes[ip]->GetDzpos() ); // Line 184
-	  
+
+	  Double_t xIntercept, yIntercept;
+	  Double_t zpos = ( fPlanes[ip]->GetZpos() +
+			    ( hitPaddle % 2 ) * fPlanes[ip]->GetDzpos() );
+	  CalcTrackIntercept(theTrack, zpos,
+			     xIntercept, yIntercept);
+	  cout << "---" << endl << xhitCoord << " " << yhitCoord << endl
+	       << xIntercept << " " << yIntercept << endl;
 	  
 	  if ( ( ip == 0 ) || ( ip == 2 ) ){ // !x plane. Line 185
 	    scinTrnsCoord = xhitCoord;
