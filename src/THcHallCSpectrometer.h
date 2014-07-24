@@ -10,6 +10,7 @@
 #include "THaSpectrometer.h"
 
 //class THaScintillator;
+class THcTrackExtra;
 
 class THcHallCSpectrometer : public THaSpectrometer {
   
@@ -30,6 +31,7 @@ public:
 protected:
   void InitializeReconstruction();
 
+  TClonesArray* fTrackExtra; 	// Extra Track info
   // Should look at the ThaMatrixElement class in THaVDC.h for better way
   // to store matrix element data
 #define fMaxReconElements 1000

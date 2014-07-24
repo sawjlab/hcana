@@ -47,6 +47,7 @@
 #include "THcGlobals.h"
 #include "THcParmList.h"
 #include "THaTrack.h"
+#include "THcTrackExtra.h"
 #include "THaTrackProj.h"
 #include "THaTriggerTime.h"
 #include "TMath.h"
@@ -66,6 +67,7 @@ THcHallCSpectrometer::THcHallCSpectrometer( const char* name, const char* descri
 
   //sc_ref = static_cast<THaScintillator*>(GetDetector("s1"));
 
+  fTrackExtra = new TClonesArray( " 
   SetTrSorting(kTRUE);
 }
 
