@@ -67,7 +67,8 @@ THcHallCSpectrometer::THcHallCSpectrometer( const char* name, const char* descri
 
   //sc_ref = static_cast<THaScintillator*>(GetDetector("s1"));
 
-  fTrackExtra = new TClonesArray( " 
+  fTrackExtra = new TClonesArray( "THcTrackExtra", kInitTrackMultiplicity);
+
   SetTrSorting(kTRUE);
 }
 
@@ -283,6 +284,8 @@ Int_t THcHallCSpectrometer::FindVertices( TClonesArray& tracks )
   }
 
   // If enabled, sort the tracks by chi2/ndof
+  // We now have an extra information object
+  // 
   if( GetTrSorting() )
     fTracks->Sort();
   

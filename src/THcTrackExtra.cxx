@@ -2,9 +2,14 @@
 
 //////////////////////////////////////////////////////////////////////////
 //
-// THaTrack
+// THcTrackExtra
 //
-// A generic track.
+// Goes into a TClonesArray parallel with the TClonesArray of THaTracks
+// Holds Hall C specific information needed for selecting the golden track
+// that doesn't fit in the THaTrack class.
+// This can go away either when THaTrack is extended with additional
+// data members or a way is made to generate spectrometer specific track
+// classes
 //
 //////////////////////////////////////////////////////////////////////////
 
@@ -21,7 +26,6 @@ THcTrackExtra::~THcTrackExtra()
 {
   // Destructor. Delete the track ID associated with this track.
 
-  delete fID;
 }
 
 //_____________________________________________________________________________
@@ -37,7 +41,6 @@ void THcTrackExtra::Clear( const Option_t* opt )
   if( opt && (*opt == 'F') ) {
     // Initialize data members
   }
-  delete fID; fID = 0;
 }
 
 //_____________________________________________________________________________
@@ -47,14 +50,9 @@ void THcTrackExtra::Print( Option_t* opt ) const
   TObject::Print( opt );
 }
 
-//_____________________________________________________________________________
-static Double_t SafeNDoF( Int_t dof )
-{
-  if( dof <= 0 )
-    return 1e-10;
-  return static_cast<Double_t>(dof);
-}
-
+#if 0
+// Will need to figure out if we need sort and how it fits in with
+// sorting of THaTrack
 //_____________________________________________________________________________
 Int_t THcTrackExtra::Compare(const TObject * obj) const
 {
@@ -71,7 +69,7 @@ Int_t THcTrackExtra::Compare(const TObject * obj) const
   else if( v1==v2 ) return 0;
   else return 1;
 }
-
+#endif
 
 //_____________________________________________________________________________
 
