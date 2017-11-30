@@ -79,7 +79,7 @@ using namespace std;
 
 //_____________________________________________________________________________
 THcHallCSpectrometer::THcHallCSpectrometer( const char* name, const char* description ) :
-  THaSpectrometer( name, description )
+  THaSpectrometer( name, description ), fEvTypeMask(0)
 {
   // Constructor. Defines the standard detectors for the HRS.
   //  AddDetector( new THaTriggerTime("trg","Trigger-based time offset"));
@@ -862,6 +862,14 @@ Int_t THcHallCSpectrometer::TrackTimes( TClonesArray* Tracks ) {
 
 
   return 0;
+}
+
+//_____________________________________________________________________________
+Int_t THcHallCSpectrometer::Decode( const THaEvData& evdata )
+{
+  Int_t evtype = evdata.GetEvType();
+  if(fEvTypeMask && ((fEvTypeMask & evtype) == 0)) return kOK;
+  return THaSpectrometer::Decode(evdata);
 }
 
 //_____________________________________________________________________________

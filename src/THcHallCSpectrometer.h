@@ -49,6 +49,8 @@ public:
   virtual Int_t   BestTrackUsingPrune();
   virtual Int_t   TrackTimes( TClonesArray* tracks );
 
+  virtual Int_t   Decode( const THaEvData& );
+
   virtual Int_t   ReadRunDatabase( const TDatime& date );
   virtual Int_t  DefineVariables( EMode mode = kDefine );
 
@@ -59,6 +61,8 @@ public:
   Double_t GetParticleMass() const {return fPartMass; }
   Double_t GetBetaAtPcentral() const { return
       fPcentral/TMath::Sqrt(fPcentral*fPcentral+fPartMass*fPartMass);}
+
+  virtual void  SetEvTypeMask(Int_t mask) { fEvTypeMask = mask;}
 
 protected:
   void InitializeReconstruction();
@@ -136,6 +140,9 @@ protected:
   Double_t fPhi_lab; // Central spectrometer angle (deg)
   // For spectrometer central momentum use fPcentral in THaSpectrometer.h
   //  THaScintillator *sc_ref;  // calculate time track hits this plane
+
+  Int_t fEvTypeMask;		// Don't decode events that don't have a 
+                                // bit in the mask
 
   // Flag for fProperties indicating that tracks are to be sorted by chi2
   static const UInt_t kSortTracks = BIT(16);
