@@ -39,8 +39,10 @@ private:
   typedef struct RocTimes {
     Bool_t has_ti_ttime;
     UInt_t ti_ttime;
+    UInt_t ti_evcount;
     std::map<Int_t, UInt_t> fadcTimesMap;
-    RocTimes() : has_ti_ttime(kFALSE) {fadcTimesMap.clear();}
+    std::map<Int_t, UInt_t> ftdcEvCountMap;
+    RocTimes() : has_ti_ttime(kFALSE) {fadcTimesMap.clear(); ftdcEvCountMap.clear();}
   } RocTimes_t;
 
   typedef struct RocStats {
@@ -51,12 +53,14 @@ private:
     std::map<Int_t, Int_t> fadcOffsetMap;
     std::map<Int_t, Int_t> fadcEarlySlipCountMap;
     std::map<Int_t, Int_t> fadcLateSlipCountMap;
+    std::map<Int_t, Int_t> ftdcEvCountWrongMap;
     RocStats() : ti_ttime_offset(0), ti_earlyslipcount(0), ti_lateslipcount(0),
       fadc_expected_offset(0)
     {
       fadcOffsetMap.clear();
       fadcEarlySlipCountMap.clear();
       fadcLateSlipCountMap.clear();
+      ftdcEvCountWrongMap.clear();
     }
   } RocStats_t;
 

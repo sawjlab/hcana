@@ -96,6 +96,7 @@ Int_t THcTimeSyncEvtHandler::Analyze(THaEvData *evdata)
         if(ifill) {
           p++; banklen--;  // Skip filler word
         }
+	CrateTimeMap[roc]->ti_evcount = p[3]-1;
         if(banklen>=5) {   // Need bank header, at least 2 TI  headers, the  trailer and 2 data words
           UInt_t titime = p[4];
 	  if(fDebug) cout << roc << ": TItime " << titime << endl;
@@ -125,6 +126,17 @@ Int_t THcTimeSyncEvtHandler::Analyze(THaEvData *evdata)
 	    p++;
 	    break;
 	  }
+	}
+      } else if (tag==1190) {	// Bank with CAEN 1190 TDCs
+	if(fDebug) cout << roc << ": 1190" << endl;
+	// Walk through this bank looking for TDC headers
+	while(p<pnext) {
+	  if((*p & 0xf8000000) == 0x40000000) {
+	    Int_t slot= *p & 0x1f;
+	    Int_t evcount = (*p >> 5) & 0x3fffff;
+	    CrateTimeMap[roc]->ftdcEvCountMap[slot] = evcount;
+	  }
+	  p++;
 	}
       }
       p=pnext;    // Skip to next bank
@@ -186,6 +198,15 @@ void THcTimeSyncEvtHandler::InitStats() {
         CrateStatsMap[roc]->fadcLateSlipCountMap[slot] = 0;
       }
     }
+    if(roctimes->ftdcEvCountMap.size()>0) {
+      if(fDebug) cout << endl << " 1190";
+      std::map<Int_t, UInt_t>::iterator itt = roctimes->ftdcEvCountMap.begin();
+      while(itt != roctimes->ftdcEvCountMap.end()) {
+        Int_t slot = itt->first;
+	itt++;
+	CrateStatsMap[roc]->ftdcEvCountWrongMap[slot] = 0;
+      }
+    }
   }
 }
 
@@ -216,6 +237,17 @@ void THcTimeSyncEvtHandler::AccumulateStats() {
         }
       }
     }
+    if(rocstats->ftdcEvCountWrongMap.size()>0) {
+      std::map<Int_t, Int_t>::iterator itt = rocstats->ftdcEvCountWrongMap.begin();
+      while(itt != rocstats->ftdcEvCountWrongMap.end()) {
+	Int_t slot = itt->first;
+	itt++;
+	if((CrateTimeMap[roc]->ti_evcount & 0x3fffff)
+	   != CrateTimeMap[roc]->ftdcEvCountMap[slot]) {
+	  rocstats->ftdcEvCountWrongMap[slot]++;
+	}
+      }
+    }
   }
 }
 void THcTimeSyncEvtHandler::PrintStats()
@@ -244,6 +276,16 @@ void THcTimeSyncEvtHandler::PrintStats()
 	cout << "    " << slot << " " << rocstats->fadcOffsetMap[slot] << "    " << earlyslips << "    " << lateslips << endl;
       }
     }
+    std::map<Int_t, Int_t>::iterator itw = rocstats->ftdcEvCountWrongMap.begin();
+    while(itw != rocstats->ftdcEvCountWrongMap.end()) {
+      Int_t slot = itw->first;
+      Int_t wrongcount = itw->second;
+      itw++;
+      if(wrongcount > 0) {
+	cout << "    " << slot << " " << wrongcount << endl;
+      }
+    }
+	
   }
   cout << "-------------------------------------------------------------------" << endl;
 }
