@@ -97,14 +97,6 @@ Int_t THcTimeSyncEvtHandler::Analyze(THaEvData *evdata)
   Int_t roc = -1;
   Bool_t issyncevent=kFALSE;
 
-  std::map<Int_t, struct RocTimes *>::iterator it = CrateTimeMap.begin();
-  while(it != CrateTimeMap.end()) {
-    Int_t roc = it->first;
-    struct RocTimes *roctimes = it->second;
-    delete roctimes;
-    it++;
-  }  
-
   CrateTimeMap.clear();
 
   while(p<plast) {
@@ -117,7 +109,8 @@ Int_t THcTimeSyncEvtHandler::Analyze(THaEvData *evdata)
       if(evlen-*(p-1) > 1) { // Don't use overall event header
         roc = (*p>>16) & 0xf;
 	if(fDebug) cout << "ROC: " << roc << " " << evlen << " " << *(p-1) << hex << " " << *p << dec << endl;
-        CrateTimeMap[roc] = new RocTimes_t;
+	RocTimes_t roctimes;
+	CrateTimeMap.insert(std::make_pair(roc, roctimes));
       }
       p++;				// Now pointing to a bank in the bank
     } else if (((*p & 0xff00) == 0x100) && (*p != 0xC0000100)) {
@@ -136,12 +129,12 @@ Int_t THcTimeSyncEvtHandler::Analyze(THaEvData *evdata)
         if(ifill) {
           p++; banklen--;  // Skip filler word
         }
-	CrateTimeMap[roc]->ti_evcount = p[3];
+	CrateTimeMap[roc].ti_evcount = p[3];
         if(banklen>=5) {   // Need bank header, at least 2 TI  headers, the  trailer and 2 data words
           UInt_t titime = p[4];
 	  if(fDebug) cout << roc << ": TItime " << titime << endl;
-          CrateTimeMap[roc]->has_ti_ttime = kTRUE;
-          CrateTimeMap[roc]->ti_ttime = titime;
+          CrateTimeMap[roc].has_ti_ttime = kTRUE;
+          CrateTimeMap[roc].ti_ttime = titime;
         }
       } else if (tag==3801) {
 	if(fResync && num==1) {
@@ -162,7 +155,7 @@ Int_t THcTimeSyncEvtHandler::Analyze(THaEvData *evdata)
 	    {
 	      UInt_t fadctime = ((*p)&0xFFFFFF) + (((*(p+1))&0xFF)<<24);
 	      if(fDebug) cout << "    " << slot << ": " << fadctime << endl;
-	      CrateTimeMap[roc]->fadcTimesMap[slot] = fadctime;
+	      CrateTimeMap[roc].fadcTimesMap[slot] = fadctime;
 	      p += 2;
 	      break;
 	    }
@@ -189,7 +182,7 @@ Int_t THcTimeSyncEvtHandler::Analyze(THaEvData *evdata)
 	  if((*p & 0xf8000000) == 0x40000000) {
 	    Int_t slot= *p & 0x1f;
 	    Int_t evcount = (*p >> 5) & 0x3fffff;
-	    CrateTimeMap[roc]->ftdcEvCountMap[slot] = evcount;
+	    CrateTimeMap[roc].ftdcEvCountMap[slot] = evcount;
 	  }
 	  p++;
 	}
@@ -350,28 +343,26 @@ void THcTimeSyncEvtHandler::InitStats() {
     fMasterRoc = CrateTimeMap.begin()->first;
   }
   if(fDebug) cout << "fMasterRoc " << fMasterRoc << endl;
-  UInt_t master_ttime = CrateTimeMap[fMasterRoc]->ti_ttime;
+  UInt_t master_ttime = CrateTimeMap[fMasterRoc].ti_ttime;
   if(fDebug) cout << "master_ttime " << master_ttime << endl;
 
   CrateStatsMap.clear();
 
-  std::map<Int_t, struct RocTimes *>::iterator it = CrateTimeMap.begin();
+  std::map<Int_t, struct RocTimes>::iterator it = CrateTimeMap.begin();
   while(it != CrateTimeMap.end()) {
     Int_t roc = it->first;
-    struct RocTimes *roctimes = it->second;
-    it++;
     CrateStatsMap[roc] = new RocStats_t;
-    CrateStatsMap[roc]->ti_ttime_offset = roctimes->ti_ttime - master_ttime;
-    if(roctimes->fadcTimesMap.size()>0) {
+    CrateStatsMap[roc]->ti_ttime_offset = (it->second).ti_ttime - master_ttime;
+    if((it->second).fadcTimesMap.size()>0) {
       if(fDebug) cout << endl << " FADC";
-      std::map<Int_t, UInt_t>::iterator itt = roctimes->fadcTimesMap.begin();
+      std::map<Int_t, UInt_t>::iterator itt = (it->second).fadcTimesMap.begin();
       Bool_t use_expected_offset = kFALSE;
       Int_t expected_offset = 0;
       if(ExpectedOffsetMap.find(roc) != ExpectedOffsetMap.end()) {
 	expected_offset = ExpectedOffsetMap[roc];
 	use_expected_offset = kTRUE;
       }
-      while(itt != roctimes->fadcTimesMap.end()) {
+      while(itt != (it->second).fadcTimesMap.end()) {
         Int_t slot = itt->first;
         UInt_t fadctime = itt->second;
         itt++;
@@ -384,30 +375,31 @@ void THcTimeSyncEvtHandler::InitStats() {
         CrateStatsMap[roc]->fadcLateSlipCountMap[slot] = 0;
       }
     }
-    if(roctimes->ftdcEvCountMap.size()>0) {
+    if((it->second).ftdcEvCountMap.size()>0) {
       if(fDebug) cout << endl << " 1190";
-      std::map<Int_t, UInt_t>::iterator itt = roctimes->ftdcEvCountMap.begin();
-      while(itt != roctimes->ftdcEvCountMap.end()) {
+      std::map<Int_t, UInt_t>::iterator itt = (it->second).ftdcEvCountMap.begin();
+      while(itt != (it->second).ftdcEvCountMap.end()) {
         Int_t slot = itt->first;
 	itt++;
 	CrateStatsMap[roc]->ftdcEvCountWrongMap[slot] = 0;
       }
     }
+    it++;
   }
 }
 
 void THcTimeSyncEvtHandler::AccumulateStats(Bool_t sync) {
   fNEvents++;
   // Get trigger time from master CrateInfo
-  UInt_t master_ttime = CrateTimeMap[fMasterRoc]->ti_ttime;
+  UInt_t master_ttime = CrateTimeMap[fMasterRoc].ti_ttime;
   std::map<Int_t, RocStats_t *>::iterator it = CrateStatsMap.begin();
   while(it != CrateStatsMap.end()) {
     Int_t roc = it->first;
     RocStats* rocstats = it->second;
     it++;
-    if(CrateTimeMap[roc]->ti_ttime < master_ttime + rocstats->ti_ttime_offset) {
+    if(CrateTimeMap[roc].ti_ttime < master_ttime + rocstats->ti_ttime_offset) {
       rocstats->ti_earlyslipcount++;
-    } else if(CrateTimeMap[roc]->ti_ttime > master_ttime + rocstats->ti_ttime_offset) {
+    } else if(CrateTimeMap[roc].ti_ttime > master_ttime + rocstats->ti_ttime_offset) {
       rocstats->ti_lateslipcount++;
     }
     if(rocstats->fadcOffsetMap.size()>0) {
@@ -416,9 +408,9 @@ void THcTimeSyncEvtHandler::AccumulateStats(Bool_t sync) {
         Int_t slot = itt->first;
         Int_t fadcoffset = itt->second;
         itt++;
-        if(CrateTimeMap[roc]->fadcTimesMap[slot] < master_ttime+fadcoffset) {
+        if(CrateTimeMap[roc].fadcTimesMap[slot] < master_ttime+fadcoffset) {
           rocstats->fadcEarlySlipCountMap[slot]++;
-	} else if(CrateTimeMap[roc]->fadcTimesMap[slot] > master_ttime+fadcoffset) {
+	} else if(CrateTimeMap[roc].fadcTimesMap[slot] > master_ttime+fadcoffset) {
 	  rocstats->fadcLateSlipCountMap[slot]++;
         }
       }
@@ -431,8 +423,8 @@ void THcTimeSyncEvtHandler::AccumulateStats(Bool_t sync) {
 	if(rocstats->ftdcEvCountOffsetMap.find(slot)==rocstats->ftdcEvCountOffsetMap.end()) {
 	  rocstats->ftdcEvCountOffsetMap[slot] = 1;
 	}
-	Int_t cdiff = (CrateTimeMap[roc]->ti_evcount & 0x3fffff) -
-	  ((CrateTimeMap[roc]->ftdcEvCountMap[slot]+rocstats->ftdcEvCountOffsetMap[slot])&0x3fffff);
+	Int_t cdiff = (CrateTimeMap[roc].ti_evcount & 0x3fffff) -
+	  ((CrateTimeMap[roc].ftdcEvCountMap[slot]+rocstats->ftdcEvCountOffsetMap[slot])&0x3fffff);
 	if(sync) { // Need to do this check on the event after the sync event too
 	  if(cdiff>2) {
 	    cout << "ROC/Slot " << roc << "/" << slot << " count diff correction " << cdiff << endl;

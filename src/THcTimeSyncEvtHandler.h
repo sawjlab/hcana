@@ -88,7 +88,7 @@ private:
     }
   } RocStats_t;
 
-  std::map<Int_t, RocTimes_t *> CrateTimeMap;
+  std::map<Int_t, RocTimes_t> CrateTimeMap;
   std::map<Int_t, RocStats_t *> CrateStatsMap;
   std::map<Int_t, Int_t> ExpectedOffsetMap;
 
