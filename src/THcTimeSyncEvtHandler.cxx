@@ -97,6 +97,14 @@ Int_t THcTimeSyncEvtHandler::Analyze(THaEvData *evdata)
   Int_t roc = -1;
   Bool_t issyncevent=kFALSE;
 
+  std::map<Int_t, struct RocTimes *>::iterator it = CrateTimeMap.begin();
+  while(it != CrateTimeMap.end()) {
+    Int_t roc = it->first;
+    struct RocTimes *roctimes = it->second;
+    delete roctimes;
+    it++;
+  }  
+
   CrateTimeMap.clear();
 
   while(p<plast) {
