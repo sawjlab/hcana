@@ -106,7 +106,11 @@ Int_t THcScalerEvtHandler::End( THaRunBase* r)
     evNumberR = -1;
   if (fScalerTree) fScalerTree->Fill();
 
-  fDelayedEvents.clear();	// Does this free the arrays?
+  for(std::vector<UInt_t*>::iterator it = fDelayedEvents.begin();
+      it != fDelayedEvents.end(); ++it) {
+    delete(*it);		// Delete arrays before clear
+  }
+  fDelayedEvents.clear();
 
   if (fScalerTree) fScalerTree->Write();
   return 0;
