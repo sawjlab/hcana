@@ -249,6 +249,10 @@ void THcDriftChamber::ProcessHits( void)
 {
   // Make a list of hits for whole chamber
   fNhits = 0;
+
+  for(vector<THcDCHit *>::iterator it = fHits.begin(); it!=fHits.end(); ++it) {
+    delete(*it);
+  }
   fHits.clear();
   fHits.reserve(40);
 
