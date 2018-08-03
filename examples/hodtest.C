@@ -49,7 +49,6 @@
   hscaler->SetDebugFile("HScaler.txt");
   gHaEvtHandlers->Add (hscaler);
 
-
   THaApparatus* SOS = new THcHallCSpectrometer("S","SOS");
   gHaApps->Add( SOS );
   // Add detectors
@@ -82,7 +81,6 @@
   // and executes the output routines.
   THcAnalyzer* analyzer = new THcAnalyzer;
 
-
   // A simple event class to be output to the resulting tree.
   // Creating your own descendant of THaEvent is one way of
   // defining and controlling the output.
@@ -104,6 +102,7 @@
 
   // Define the analysis parameters
   analyzer->SetEvent( event );
+  analyzer->SetEpicsEvtType(132);
   analyzer->SetOutFile( "hodtest.root" );
   analyzer->SetOdefFile("output.def");
   analyzer->SetCutFile("hodtest_cuts.def");        // optional
