@@ -20,6 +20,8 @@ public:
 
   void PrintReport( const char* templatefile, const char* ofile);
 
+  THaEpicsEvtHandler* GetEpicsEvtHandler() { return fEpicsHandler; }
+
 protected:
 
   Int_t fPedestalEvtype;
