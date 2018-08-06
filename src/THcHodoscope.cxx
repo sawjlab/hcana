@@ -32,6 +32,7 @@ hodoscope array, not just one plane.
 #include "THaTrack.h"
 #include "TClonesArray.h"
 #include "TMath.h"
+#include "THcAnalyzer.h"
 
 #include "THaTrackProj.h"
 #include <vector>
@@ -142,6 +143,9 @@ void THcHodoscope::Setup(const char* name, const char* description)
   } else {
     fCherenkov = dynamic_cast<THcCherenkov*>(app->GetDetector("cer"));
   }
+
+  THcAnalyzer *analyzer = dynamic_cast<THcAnalyzer*>(THcAnalyzer::GetInstance());
+  fEpicsHandler = analyzer->GetEpicsEvtHandler();
 
   delete [] desc;
 }
@@ -682,6 +686,12 @@ Int_t THcHodoscope::Decode( const THaEvData& evdata )
    *
    *
    */
+  if(fEpicsHandler) {
+    if(fEpicsHandler->IsLoaded("hallc_photocurrent")){
+//      cout << "hallc_photocurrent " << fEpicsHandler->GetString("hallc_photocurrent") << endl;
+    }
+  }
+
   ClearEvent();
   // Get the Hall C style hitlist (fRawHitList) for this event
   Bool_t present = kTRUE;	// Suppress reference time warnings

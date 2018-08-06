@@ -25,6 +25,7 @@
 #include "THcDriftChamberPlane.h"
 #include "THcDriftChamber.h"
 #include "TMath.h"
+#include "THaEpicsEvtHandler.h"
 
 #include "THaSubDetector.h"
 #include "TClonesArray.h"
@@ -137,6 +138,7 @@ public:
 protected:
 
   THcCherenkov* fCherenkov;
+  THaEpicsEvtHandler* fEpicsHandler;
 
   Int_t fTDC_RefTimeCut;
   Int_t fADC_RefTimeCut;
