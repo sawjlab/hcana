@@ -211,7 +211,16 @@ Int_t THcTimeSyncEvtHandler::Analyze(THaEvData *evdata)
 	    lastbunchid = bunchid;
 	    lasttdc = tdc;
 	    lastslot = slot;
+	  } else if ((*p & 0xf8000000) == 0x88000000) {
+	    // Extended trigger time
+	    Int_t ettt = *p & 0x7FFFFFF;
+	    //	    cout << "ROC/SLOT " << roc << "/" << slot << " " << hex << ettt << dec << endl;
+	    CrateTimeMap[roc]->etttTimesMap[slot] = ettt;
 	  }
+	    //	  } else if ((*p & 0xf8000000) == 0x80000000) {
+	    //	    // Global Trailer
+	    //	    Int_t GTslot = *p & 0x1F;
+	    //	    cout << "ROC/SLOT/SLOT " << roc << "/" << slot << "/" << GTslot << endl;
 	  p++;
 	}
       }
@@ -433,18 +442,32 @@ void THcTimeSyncEvtHandler::PrintBunchIds(Int_t tdcroc) {
       }
       UInt_t last_ti_time = CrateStatsMap[roc]->last_ti_ttime;
       CrateStatsMap[roc]->last_ti_ttime = ti_time;
-      cout << last_ti_time << " " << ti_time << endl;
-      cout << (ti_time-last_ti_time)/6.25;
-      std::map<Int_t, UInt_t>::iterator itt = roctimes->ftdcTimesMap.begin();
+      //      cout << last_ti_time << " " << ti_time << endl;
+      //      cout << (ti_time-last_ti_time)/6.25;
+      std::map<Int_t, Int_t>::iterator itt = roctimes->ftdcTimesMap.begin();
       while(itt != roctimes->ftdcTimesMap.end()) {
 	Int_t slot = itt->first;
-        UInt_t tdctime = itt->second;
+        Int_t tdctime = itt->second;
 	if(fFirstTime) {
 	  CrateStatsMap[roc]->lasttdcTimesMap[slot] = tdctime;
 	}
 	UInt_t lasttdctime = CrateStatsMap[roc]->lasttdcTimesMap[slot];
 	CrateStatsMap[roc]->lasttdcTimesMap[slot] = tdctime;
-	cout << " " << tdctime-lasttdctime;
+	//	cout << " " << tdctime-lasttdctime;
+	itt++;
+      }
+      //      cout << endl;
+      cout << (ti_time-last_ti_time)/200;
+      itt = roctimes->etttTimesMap.begin();
+      while(itt != roctimes->etttTimesMap.end()) {
+	Int_t slot = itt->first;
+        Int_t ettttime = itt->second;
+	if(fFirstTime) {
+	  CrateStatsMap[roc]->lastetttTimesMap[slot] = ettttime;
+	}
+	UInt_t lastettttime = CrateStatsMap[roc]->lastetttTimesMap[slot];
+	CrateStatsMap[roc]->lastetttTimesMap[slot] = ettttime;
+	cout << " " << ettttime-lastettttime;
 	itt++;
       }
       cout << endl;

@@ -64,11 +64,13 @@ private:
     UInt_t last_ti_ttime;
     UInt_t ti_evcount;
     std::map<Int_t, UInt_t> fadcTimesMap;
-    std::map<Int_t, UInt_t> ftdcTimesMap;
+    std::map<Int_t, Int_t> ftdcTimesMap;
+    std::map<Int_t, Int_t> etttTimesMap;
     std::map<Int_t, UInt_t> ftdcEvCountMap;
     RocTimes() : has_ti_ttime(kFALSE) {
       fadcTimesMap.clear();
       ftdcTimesMap.clear();
+      etttTimesMap.clear();
       ftdcEvCountMap.clear();
     }
   } RocTimes_t;
@@ -85,6 +87,7 @@ private:
     std::map<Int_t, Int_t> ftdcEvCountWrongMap;
     std::map<Int_t, Int_t> ftdcEvCountOffsetMap;
     std::map<Int_t, Int_t> lasttdcTimesMap;
+    std::map<Int_t, Int_t> lastetttTimesMap;
     RocStats() : ti_ttime_offset(0), ti_earlyslipcount(0), ti_lateslipcount(0),
       fadc_expected_offset(0)
     {
@@ -94,6 +97,7 @@ private:
       ftdcEvCountWrongMap.clear();
       ftdcEvCountOffsetMap.clear();
       lasttdcTimesMap.clear();
+      lastetttTimesMap.clear();
     }
   } RocStats_t;
 
