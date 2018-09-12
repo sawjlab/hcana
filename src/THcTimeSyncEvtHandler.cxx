@@ -188,11 +188,29 @@ Int_t THcTimeSyncEvtHandler::Analyze(THaEvData *evdata)
 	}
 	if(fDebug) cout << roc << ": 1190" << endl;
 	// Walk through this bank looking for TDC headers
+	Int_t lastslot = -1;
+	Int_t lastbunchid = -1;
+	Int_t lasttdc = -1;
+	Int_t slot=-1;
 	while(p<pnext) {
 	  if((*p & 0xf8000000) == 0x40000000) {
-	    Int_t slot= *p & 0x1f;
+	    slot= *p & 0x1f;
 	    Int_t evcount = (*p >> 5) & 0x3fffff;
 	    CrateTimeMap[roc]->ftdcEvCountMap[slot] = evcount;
+	  } else if ((*p & 0xf8000000) == 0x08000000) {
+	    Int_t bunchid = *p & 0xfff;
+	    Int_t tdc = (*p>>24)&0x3;
+	    CrateTimeMap[roc]->ftdcTimesMap[slot] = bunchid;
+	    //	    if(roc==3) cout << "ROC/SLOT/TDC " << roc << "/" << slot << "/" << tdc << " " << bunchid  << endl;
+	    if(slot == lastslot) {
+	      if(bunchid != lastbunchid) {
+		cout << "ROC/SLOT " << roc << "/" << slot << " " << lasttdc << ":" <<
+		  lastbunchid << "   " << tdc << ":" << bunchid << endl;
+	      }
+	    }
+	    lastbunchid = bunchid;
+	    lasttdc = tdc;
+	    lastslot = slot;
 	  }
 	  p++;
 	}
@@ -206,8 +224,11 @@ Int_t THcTimeSyncEvtHandler::Analyze(THaEvData *evdata)
   if(fFirstTime) {
     InitStats();
     fLastEvent[0] = 0;
-    fFirstTime = kFALSE;
     fDumpNew=2;
+  }
+  PrintBunchIds(3);
+  if(fFirstTime) {
+    fFirstTime = kFALSE;
   }
   if(issyncevent) cout << "SYNC event" << endl;
   AccumulateStats(fLastEventWasSync);
@@ -399,6 +420,39 @@ void THcTimeSyncEvtHandler::InitStats() {
   }
 }
 
+void THcTimeSyncEvtHandler::PrintBunchIds(Int_t tdcroc) {
+  //  UInt_t master_ttime = CrateTimeMap[fMasterRoc]->ti_ttime;
+  std::map<Int_t, struct RocTimes *>::iterator it = CrateTimeMap.begin();
+  while(it != CrateTimeMap.end()) {
+    Int_t roc = it->first;
+    if(roc==tdcroc) {
+      struct RocTimes *roctimes = it->second;
+      UInt_t ti_time = roctimes->ti_ttime;
+      if(fFirstTime) {
+	CrateStatsMap[roc]->last_ti_ttime = 0;
+      }
+      UInt_t last_ti_time = CrateStatsMap[roc]->last_ti_ttime;
+      CrateStatsMap[roc]->last_ti_ttime = ti_time;
+      cout << last_ti_time << " " << ti_time << endl;
+      cout << (ti_time-last_ti_time)/6.25;
+      std::map<Int_t, UInt_t>::iterator itt = roctimes->ftdcTimesMap.begin();
+      while(itt != roctimes->ftdcTimesMap.end()) {
+	Int_t slot = itt->first;
+        UInt_t tdctime = itt->second;
+	if(fFirstTime) {
+	  CrateStatsMap[roc]->lasttdcTimesMap[slot] = tdctime;
+	}
+	UInt_t lasttdctime = CrateStatsMap[roc]->lasttdcTimesMap[slot];
+	CrateStatsMap[roc]->lasttdcTimesMap[slot] = tdctime;
+	cout << " " << tdctime-lasttdctime;
+	itt++;
+      }
+      cout << endl;
+    }
+    it++;
+  }
+}
+  
 void THcTimeSyncEvtHandler::AccumulateStats(Bool_t sync) {
   fNEvents++;
   // Get trigger time from master CrateInfo

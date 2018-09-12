@@ -38,6 +38,7 @@ private:
 
   virtual void InitStats();
   virtual void AccumulateStats(Bool_t sync);
+  virtual void PrintBunchIds(Int_t roc);
 
   Bool_t fFirstTime;
   Int_t fMasterRoc; // ROC with the TI master
@@ -60,11 +61,14 @@ private:
   typedef struct RocTimes {
     Bool_t has_ti_ttime;
     UInt_t ti_ttime;
+    UInt_t last_ti_ttime;
     UInt_t ti_evcount;
     std::map<Int_t, UInt_t> fadcTimesMap;
+    std::map<Int_t, UInt_t> ftdcTimesMap;
     std::map<Int_t, UInt_t> ftdcEvCountMap;
     RocTimes() : has_ti_ttime(kFALSE) {
       fadcTimesMap.clear();
+      ftdcTimesMap.clear();
       ftdcEvCountMap.clear();
     }
   } RocTimes_t;
@@ -74,11 +78,13 @@ private:
     Int_t ti_earlyslipcount;
     Int_t ti_lateslipcount;
     Int_t fadc_expected_offset;
+    UInt_t last_ti_ttime;
     std::map<Int_t, Int_t> fadcOffsetMap;
     std::map<Int_t, Int_t> fadcEarlySlipCountMap;
     std::map<Int_t, Int_t> fadcLateSlipCountMap;
     std::map<Int_t, Int_t> ftdcEvCountWrongMap;
     std::map<Int_t, Int_t> ftdcEvCountOffsetMap;
+    std::map<Int_t, Int_t> lasttdcTimesMap;
     RocStats() : ti_ttime_offset(0), ti_earlyslipcount(0), ti_lateslipcount(0),
       fadc_expected_offset(0)
     {
@@ -87,13 +93,14 @@ private:
       fadcLateSlipCountMap.clear();
       ftdcEvCountWrongMap.clear();
       ftdcEvCountOffsetMap.clear();
+      lasttdcTimesMap.clear();
     }
   } RocStats_t;
 
   std::map<Int_t, RocTimes_t *> CrateTimeMap;
   std::map<Int_t, RocStats_t *> CrateStatsMap;
   std::map<Int_t, Int_t> ExpectedOffsetMap;
-
+  
   THcTimeSyncEvtHandler(const THcTimeSyncEvtHandler& fh);
   THcTimeSyncEvtHandler& operator=(const THcTimeSyncEvtHandler& fh);
 
