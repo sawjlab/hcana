@@ -439,8 +439,11 @@ void THcTimeSyncEvtHandler::PrintBunchIds(Int_t tdcroc) {
       UInt_t ti_time = roctimes->ti_ttime;
       if(fFirstTime) {
 	CrateStatsMap[roc]->last_ti_ttime = 0;
+	CrateStatsMap[roc]->first_ti_ttime = ti_time;
+	CrateStatsMap[roc]->ti_ttime_rollovers = 0;
       }
       UInt_t last_ti_time = CrateStatsMap[roc]->last_ti_ttime;
+      if(ti_time < last_ti_time) CrateStatsMap[roc]->ti_ttime_rollovers++;
       CrateStatsMap[roc]->last_ti_ttime = ti_time;
       //      cout << last_ti_time << " " << ti_time << endl;
       //      cout << (ti_time-last_ti_time)/6.25;
@@ -461,13 +464,30 @@ void THcTimeSyncEvtHandler::PrintBunchIds(Int_t tdcroc) {
       itt = roctimes->etttTimesMap.begin();
       while(itt != roctimes->etttTimesMap.end()) {
 	Int_t slot = itt->first;
-        Int_t ettttime = itt->second;
+        UInt_t ettttime = itt->second;
 	if(fFirstTime) {
 	  CrateStatsMap[roc]->lastetttTimesMap[slot] = ettttime;
+	  CrateStatsMap[roc]->firstetttTimesMap[slot] = ettttime;
+	  CrateStatsMap[roc]->etttrolloversTimesMap[slot] = 0;
 	}
 	UInt_t lastettttime = CrateStatsMap[roc]->lastetttTimesMap[slot];
 	CrateStatsMap[roc]->lastetttTimesMap[slot] = ettttime;
+	if(ettttime < lastettttime) CrateStatsMap[roc]->etttrolloversTimesMap[slot]++;
 	cout << " " << ettttime-lastettttime;
+	itt++;
+      }
+      cout << endl;
+      Long64_t longtitime = ti_time + CrateStatsMap[roc]->ti_ttime_rollovers*((Long64_t) 4294967296) -
+	CrateStatsMap[roc]->first_ti_ttime;
+      cout << longtitime;
+      itt = roctimes->etttTimesMap.begin();
+      while(itt != roctimes->etttTimesMap.end()) {
+	Int_t slot = itt->first;
+        UInt_t ettttime = itt->second;
+	Long64_t longttttime = ettttime +
+	  CrateStatsMap[roc]->etttrolloversTimesMap[slot]*((Long64_t) 134217728) -
+	  CrateStatsMap[roc]->firstetttTimesMap[slot];
+	cout << " " << longttttime;
 	itt++;
       }
       cout << endl;

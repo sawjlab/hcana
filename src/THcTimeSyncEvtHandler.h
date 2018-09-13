@@ -101,6 +101,8 @@ private:
       ftdcEvCountOffsetMap.clear();
       lasttdcTimesMap.clear();
       lastetttTimesMap.clear();
+      firstetttTimesMap.clear();
+      etttrolloversTimesMap.clear();
     }
   } RocStats_t;
 
