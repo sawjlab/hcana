@@ -14,7 +14,7 @@ print('!!! Building the Hall C analyzer and libraries with SCons requires')
 print('!!! SCons version 2.5.0 or newer.')
 EnsureSConsVersion(2,5,0)
 
-baseenv = Environment(ENV = os.environ,tools=["default"],toolpath=['podd/site_scons'])
+baseenv = Environment(ENV = os.environ,tools=["default","rootcint"],toolpath=['podd/site_scons'])
 
 ####### Hall A Build Environment #############
 #
@@ -23,7 +23,8 @@ baseenv.Append(HC_DIR= baseenv.subst('$HEAD_DIR'))
 baseenv.Append(HC_SRC= baseenv.subst('$HC_DIR')+'/src')
 baseenv.Append(HA_DIR= baseenv.subst('$HC_DIR')+'/podd')
 baseenv.Append(MAIN_DIR= baseenv.subst('$HEAD_DIR'))
-baseenv.Append(HA_SRC= baseenv.subst('$HA_DIR')+'/src')
+baseenv.Append(HA_Podd= baseenv.subst('$HA_DIR')+'/HallA')
+baseenv.Append(HA_HallA= baseenv.subst('$HA_DIR')+'/Podd')
 baseenv.Append(HA_DC= baseenv.subst('$HA_DIR')+'/hana_decode')
 baseenv.Append(MAJORVERSION = '0')
 baseenv.Append(MINORVERSION = '90')
@@ -38,19 +39,19 @@ print ("Hall A Main Directory = %s" % baseenv.subst('$HA_DIR'))
 print ("Software Version = %s" % baseenv.subst('$VERSION'))
 ivercode = 65536*int(float(baseenv.subst('$SOVERSION')))+ 256*int(10*(float(baseenv.subst('$SOVERSION'))-int(float(baseenv.subst('$SOVERSION')))))+ int(float(baseenv.subst('$PATCH')))
 baseenv.Append(VERCODE = ivercode)
-baseenv.Append(CPPPATH = ['$HC_SRC','$HA_SRC','$HA_DC'])
+baseenv.Append(CPPPATH = ['$HC_SRC','$HA_Podd','$HA_HallA','$HA_DC'])
 
 sys.path.insert(1,baseenv.subst('$HA_DIR'+'/site_scons'))
 import configure
-from rootcint import rootcint
+#from rootcint import rootcint
 
 configure.FindROOT(baseenv)
 # If EVIO is set up, use it. Otherwise the Podd submodule will build it
 # and we will pick it up from there
 configure.FindEVIO(baseenv, build_it = False, fail_if_missing = False)
 
-bld = Builder(action=rootcint)
-baseenv.Append(BUILDERS = {'RootCint': bld})
+#bld = Builder(action=rootcint)
+#baseenv.Append(BUILDERS = {'RootCint': bld})
 
 ######## cppcheck ###########################
 
