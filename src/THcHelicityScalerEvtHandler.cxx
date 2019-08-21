@@ -161,10 +161,9 @@ Int_t THcHelicityScalerEvtHandler::Analyze(THaEvData *evdata)
   }
 
   UInt_t *rdata = (UInt_t*) evdata->GetRawDataBuffer();
-
-  if( evdata->GetEvType() == fDelayedType) { // Save this event for processing later
+  
+  if(evdata->GetEvType() == fDelayedType) { // Save this event for processing later
     Int_t evlen = evdata->GetEvLength();
-    
     UInt_t *datacopy = new UInt_t[evlen];
     fDelayedEvents.push_back(datacopy);
     memcpy(datacopy,rdata,evlen*sizeof(UInt_t));
@@ -177,7 +176,6 @@ Int_t THcHelicityScalerEvtHandler::Analyze(THaEvData *evdata)
       //
     }
     return ret;
-
   }
 
 }
@@ -192,9 +190,11 @@ Int_t THcHelicityScalerEvtHandler::AnalyzeBuffer(UInt_t* rdata, Bool_t onlysync)
   Int_t evlen = *p+1;
 
   ifound=0;
+  
   while(p<plast) {
     Int_t banklen = *p;
     p++;			  // point to header
+
     if (fDebugFile) {
       *fDebugFile << "Bank: " << hex << *p << dec << " len: " << *(p-1) << endl;
     }
@@ -202,7 +202,7 @@ Int_t THcHelicityScalerEvtHandler::AnalyzeBuffer(UInt_t* rdata, Bool_t onlysync)
       if(evlen-*(p-1) > 1) { // Don't use overall event header
         roc = (*p>>16) & 0xf;
 	if(fDebugFile) *fDebugFile << "ROC: " << roc << " " << evlen << " " << *(p-1) << hex << " " << *p << dec << endl;
-	//	cout << "ROC: " << roc << " " << evlen << " " << *(p-1) << hex << " " << *p << dec << endl;
+//		cout << "ROC: " << roc << " " << evlen << " " << *(p-1) << hex << " " << *p << dec << endl;
 	if(fRocSet.find(roc)==fRocSet.end()) { // Not a ROC with helicity scaler
 	  p+=*(p-1)-1;		// Skip to next ROC
 	}
@@ -217,20 +217,23 @@ Int_t THcHelicityScalerEvtHandler::AnalyzeBuffer(UInt_t* rdata, Bool_t onlysync)
       // At any point in the bank where the word is not a matching
       // header, we stop.
       UInt_t tag = (*p>>16) & 0xffff; // Bank ID (ROC #)
-      //      UInt_t num = (*p) & 0xff;
+  //          UInt_t num = (*p) & 0xff;
       UInt_t *pnext = p+banklen;	// Next bank
       p++;			// First data word
-
       // If the bank is not a helicity scaler bank
       // or it is not one of the ROC containing helcity scaler data
       // skip to the next bank
       //cout << "BankID=" << tag << endl;
+
       if (tag != fBankID) {
 	p = pnext;		// Fall through to end of the above else if
 	//	cout << "  Skipping to next bank" << endl;
 
       } else {
 	// This is a helicity scaler bank
+	//if (roc == 5 && evNumber < 12687) {
+	if (roc == 5) {
+	/**
 	cout << "ROC " << roc << "  Scaler bank " << tag << ": " << banklen << endl;
 	cout << hex;
 	for(Int_t i=0;i<banklen-1;i++) {
@@ -243,7 +246,163 @@ Int_t THcHelicityScalerEvtHandler::AnalyzeBuffer(UInt_t* rdata, Bool_t onlysync)
 	  }
 	}
 	cout << dec << endl;
-      }
+	 **/
+	//*************************************************************************************************	
+	
+	cout << "evNumber:" << " " << evNumber << endl;
+
+	Int_t nevents = (banklen-2)/32;
+	//cout << "# of helicity events in bank:" << " " << nevents << endl;
+	
+	Int_t DAQ_rep_hel_windows[nevents];
+		
+	Int_t quartet_1[4] = {1,0,0,1}; // + - - + quartet 
+	Int_t quartet_2[4] = {0,1,1,0}; // - + + - quartet
+
+	for (Int_t iev = 1; iev <= nevents; iev++) {  // find number of helicity events in each bank
+		Int_t nentries = 32*iev+2;
+		DAQ_rep_hel_windows[iev] = ((((p[nentries-33]>>28) & 0xff) >> 2) & 1);
+		//std::cout << "DAQ Reported Helicity:" << " " << DAQ_rep_hel_windows[iev];
+		DAQ_rep_hel_bank.push_back(DAQ_rep_hel_windows[iev]);
+		std::cout << endl;
+	}
+
+	//cout << "Size of DAQ rep hel bank: " << DAQ_rep_hel_bank.size() << endl;
+
+	for (Int_t i = 0; i<120; i=i+4) {
+		//cout << "DAQ Reported Helicity at window " << i << ": " << DAQ_rep_hel_bank[i] << endl;
+		random_seed.insert(random_seed.begin(), DAQ_rep_hel_bank[i]); 
+		// last event is first element in vector. So the beginning contains 
+		// bit 30 ("event" 30) and the last contains bit 1 
+		// ("event" 1 - first window of very first quartet)	
+	}
+	
+
+// START
+
+if (DAQ_rep_hel_bank.size() >= 120 && evNumber < 12687) {	
+		
+	for (Int_t i = 0; i < 30; i++){
+	//cout << "scaler event: " << i << " random seed: " << random_seed[i] << endl;
+	}
+
+	bit1 = random_seed[0]; // corresponds to last scaler event
+	bit7 = random_seed[6];
+	bit28 = random_seed[27];
+	bit29 = random_seed[28];
+	bit30 = random_seed[29]; // corresponds to first scaler event
+
+	Int_t newbit = bit30 ^ bit29 ^ bit28 ^ bit7;
+	//cout << "new bit: " << newbit << endl;
+	
+	if (newbit == 1) {
+	Int_t next_quartet[4] = {1,0,0,1};
+	cout << "DAQ predicted (delayed) helicity: " << next_quartet[0] << next_quartet[1] << next_quartet[2] << next_quartet[3] << endl;
+	for (Int_t i = 0; i < 4; i++) {
+	DAQ_pred_hel_bank.push_back(next_quartet[i]);
+	}
+	}
+
+	else if (newbit ==0) {
+	Int_t next_quartet[4] = {0,1,1,0};
+	cout << "DAQ predicted (delayed) helicity: " << next_quartet[0] << next_quartet[1] << next_quartet[2] << next_quartet[3] << endl;
+	for (Int_t i = 0; i < 4; i++) {
+	DAQ_pred_hel_bank.push_back(next_quartet[i]);
+	}
+	}
+	
+	else {
+	return 0;
+	}
+
+  
+
+	for (Int_t i = 0; i < 700; i++) {
+
+	//std::rotate(random_seed.begin(), random_seed.begin() + 1, random_seed.begin() + 30);  // left-shift
+	std::rotate(random_seed.begin(), random_seed.begin() + 29, random_seed.begin() + 30);  // right-shift  
+
+	for (Int_t i=0; i < 30; i++) {
+	//cout << "index (scaler event): " << i << " random seed left-shifted: " << random_seed[i] << endl; 
+	}
+
+	random_seed[0] = newbit;
+	bit1 = random_seed[0];	
+
+	bit7 = random_seed[6];
+	bit28 = random_seed[27];
+	bit29 = random_seed[28];
+	bit30 = random_seed[29]; // corresponds to first scaler event
+
+	newbit = bit30 ^ bit29 ^ bit28 ^ bit7;
+	
+	if (newbit == 1) {
+	Int_t next_quartet[4] = {1,0,0,1};
+	cout << "DAQ predicted (delayed) helicity: " << next_quartet[0] << next_quartet[1] << next_quartet[2] << next_quartet[3] << endl;
+	for (Int_t i = 0; i < 4; i++) {
+	DAQ_pred_hel_bank.push_back(next_quartet[i]);
+ 	}
+	}
+
+	else if (newbit == 0) {
+	Int_t next_quartet[4] = {0,1,1,0};
+	cout << "DAQ predicted (delayed) helicity: " << next_quartet[0] << next_quartet[1] << next_quartet[2] << next_quartet[3] << endl;
+	for (Int_t i = 0; i < 4; i++) {
+	DAQ_pred_hel_bank.push_back(next_quartet[i]);
+ 	}
+	}
+	
+	else {
+	return 0;
+	}
+
+   }
+
+	cout << "size of DAQ pred hel bank: " << DAQ_pred_hel_bank.size() << endl;
+	for (Int_t i = 0; i < DAQ_pred_hel_bank.size(); i++){
+	cout << i << " " << "elements of DAQ_pred_hel_bank: " << DAQ_pred_hel_bank[i] << endl;
+	}
+
+	for (Int_t i = 8; i < DAQ_pred_hel_bank.size(); i++) {
+		DAQ_act_hel_bank.push_back(DAQ_pred_hel_bank[i]);
+	}
+
+	for (Int_t i = 0; i < DAQ_act_hel_bank.size(); i++) {
+		cout << i << " " << "elements of DAQ_act_hel_bank: " << DAQ_act_hel_bank[i] << endl;
+	}
+	
+}
+
+
+
+	//cout << "size of DAQ rep hel bank minus seed: " << DAQ_rep_hel_bank.size() - 120 << endl;
+	for (Int_t i = 120; i < DAQ_rep_hel_bank.size(); i++){
+	cout << i << " " << "reported helicity: " << DAQ_rep_hel_bank[i] << " " << "predicted helicity: " << DAQ_pred_hel_bank[i-120] << " " << "actual helicity: " << DAQ_act_hel_bank[i-120] << endl;
+	}
+	
+	
+/**
+
+	for (Int_t i = 0; i <= 120; i++) {
+		cout << "i: " << i << " " << "DAQ Reported Helicity:" << " " << DAQ_hel_bank[i] << endl;
+	if ((DAQ_hel_bank[i] == quartet_1[0]) && (DAQ_hel_bank[i+1] == quartet_1[1]) && (DAQ_hel_bank[i+2] == quartet_1[2]) && (DAQ_hel_bank[i+3] == quartet_1[3])) {
+	cout << "+ quartet potentially found at scaler event: " << i << endl;
+	}
+	else if (DAQ_hel_bank[i] == quartet_2[0] && DAQ_hel_bank[i+1] == quartet_2[1] && DAQ_hel_bank[i+2] == quartet_2[2] && DAQ_hel_bank[i+3] == quartet_2[3]) {
+	cout << " - quartet potentially found at scaler event: " << i << endl;
+	}
+	else {
+	//
+	}
+     }
+
+**/	
+	//**************************************************************************************************
+    }
+
+
+}
+
       while(p < pnext) {
 	Int_t nskip = 0;
 	if(fDebugFile) {
@@ -261,7 +420,8 @@ Int_t THcHelicityScalerEvtHandler::AnalyzeBuffer(UInt_t* rdata, Bool_t onlysync)
     } else {
       p = p+*(p-1);		// Skip to next bank
     }
-  }
+
+}
 
   if (fDebugFile) {
     *fDebugFile << "Finished with decoding.  "<<endl;
@@ -275,15 +435,20 @@ Int_t THcHelicityScalerEvtHandler::AnalyzeBuffer(UInt_t* rdata, Bool_t onlysync)
 
   evcount = evcount + 1;
   evcountR = evcount;
-  //
   
   return 1;
+
+ 	
 }
+
+//Int_t THcHelicityScalerEvtHandler::AnalyzeHelicityScaler(UInt_t *p)
+//{
+//}
 
 
 THaAnalysisObject::EStatus THcHelicityScalerEvtHandler::Init(const TDatime& date)
 {
-  //
+  
   ReadDatabase(date);
 
   fStatus = kOK;
@@ -303,8 +468,7 @@ THaAnalysisObject::EStatus THcHelicityScalerEvtHandler::Init(const TDatime& date
 
   fRocSet.insert(5);		// List ROCs that have helicity scalers
   fRocSet.insert(8);		// Should make configurable
-
-  //
+  
   return kOK;
 }
 

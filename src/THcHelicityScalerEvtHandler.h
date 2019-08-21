@@ -14,6 +14,7 @@
 #include "Decoder.h"
 #include <string>
 #include <vector>
+#include <algorithm>
 #include <set>
 #include "TTree.h"
 #include "TString.h"
@@ -29,6 +30,8 @@ public:
 
    Int_t Analyze(THaEvData *evdata);
    Int_t AnalyzeBuffer(UInt_t *rdata, Bool_t onlysync);
+   Int_t AnalyzeHelicityScaler(UInt_t *p);
+	
    virtual EStatus Init( const TDatime& run_time);
    virtual Int_t   ReadDatabase(const TDatime& date );
    virtual Int_t End( THaRunBase* r=0 );
@@ -68,6 +71,19 @@ private:
    Int_t fClockChan;
    UInt_t fLastClock;
    Int_t fClockOverflows;
+   Int_t nevents; // # of helicity windows in each helicity bank
+   Int_t DAQ_rep_hel_windows(Int_t nevents); // value of helicity in each window of DAQ reported helicity
+   std::vector <int> DAQ_rep_hel_bank; // running storage of DAQ reported helicity values
+   std::vector <int> DAQ_pred_hel_bank; // running storage of DAQ predicted helicity values
+   std::vector <int> DAQ_act_hel_bank; // running storage of DAQ actual helicity values
+   std::vector <Int_t> random_seed; // random seed for 30-bit (120 windows) shift-register 
+   Int_t bit1;
+   Int_t bit7;
+   Int_t bit28;
+   Int_t bit29;
+   Int_t bit30;
+   Int_t newbit;
+   Int_t next_quartet[4];
    std::vector<UInt_t*> fDelayedEvents;
    std::set<UInt_t> fRocSet;
 
@@ -75,6 +91,31 @@ private:
    THcHelicityScalerEvtHandler& operator=(const THcHelicityScalerEvtHandler& fh);
 
    ClassDef(THcHelicityScalerEvtHandler,0)  // Scaler Event handler
+
+   Int_t RanBit30(Int_t randseed);
+   Int_t GetSeed30(Int_t currentseed);
+
+   //Fixed Parameters
+   Int_t fRingSeed_reported_initial;
+   Int_t fFirstCyle;
+
+   Int_t fReportedHelicity;
+   Int_t fPredictedHelicity;
+   Int_t fActualHelicity;
+   Int_t fQuartetStartHelicity;
+   Int_t fQuartetStartPredictedHelicity;
+   Int_t fNCycle; // count # of helicity cycles
+   Int_t quartet_1[4];  // for finding and checking quartet pattern
+   Int_t quartet_2[4];
+   Int_t fNBits;
+   Int_t fnQrt; // position in quartet
+
+   Int_t fRingSeed_reported;
+   Int_t fRingSeed_actual;
+
+   Int_t fHelDelay; // helicity delay (# of windows)
+   Int_t fMAXBIT;   // number of bits in the pseudo-random helicity generator
+   
 
 };
 
