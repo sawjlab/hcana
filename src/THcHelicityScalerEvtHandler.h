@@ -71,7 +71,7 @@ private:
    Int_t fClockChan;
    UInt_t fLastClock;
    Int_t fClockOverflows;
-   std::vector <int> eventnumber;
+   std::vector <int> eventnumbers; // running storage of event numbers
    Int_t nevents; // # of helicity windows in each helicity bank
    Int_t DAQ_rep_hel_windows(Int_t nevents); // value of helicity in each window of DAQ reported helicity
    std::vector <int> DAQ_rep_hel_bank; // running storage of DAQ reported helicity values
