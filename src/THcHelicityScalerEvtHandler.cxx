@@ -249,6 +249,16 @@ Int_t THcHelicityScalerEvtHandler::AnalyzeBuffer(UInt_t* rdata, Bool_t onlysync)
 	
 	cout << "evNumber:" << " " << evNumber << endl;
 
+	eventnumbers.push_back(evNumber);
+		for (Int_t i = 0; i < eventnumbers.size(); i++){
+//		cout << "event number vector: " << eventnumbers[i] << endl;
+		}
+	cout << "size: " << eventnumbers.size() << endl;
+
+		if (eventnumbers.size() >= 120){
+//		cout << "event number after 120 windows: " << eventnumbers[120] << endl;
+		}
+	
 	Int_t nevents = (banklen-2)/32;
 	//cout << "# of helicity events in bank:" << " " << nevents << endl;
 	
@@ -284,6 +294,7 @@ Int_t THcHelicityScalerEvtHandler::AnalyzeBuffer(UInt_t* rdata, Bool_t onlysync)
 	
 **/
 	// begin incrementing where quartet is found (ex. i = 0 corresponds to scaler event = 0)
+	// 120 is the number of windows needed to create the 30-bit random seed
 	for (Int_t i = 0; i<120; i=i+4) { 
 		//cout << "DAQ Reported Helicity at window " << i << ": " << DAQ_rep_hel_bank[i] << endl;
 		random_seed.insert(random_seed.begin(), DAQ_rep_hel_bank[i]); 
@@ -292,9 +303,9 @@ Int_t THcHelicityScalerEvtHandler::AnalyzeBuffer(UInt_t* rdata, Bool_t onlysync)
 		// ("event" 1 - first window of very first quartet)	
 	}
 	
-
-if (DAQ_rep_hel_bank.size() >= 120 && evNumber < 12687) {	
 		
+if (DAQ_rep_hel_bank.size() >= 120 && eventnumbers.size() >= 120) {
+
 	for (Int_t i = 0; i < 30; i++){
 	//cout << "scaler event: " << i << " random seed: " << random_seed[i] << endl;
 	}
@@ -329,7 +340,7 @@ if (DAQ_rep_hel_bank.size() >= 120 && evNumber < 12687) {
   
 
 	// upper limit corresponds to # of quartets there are in the run
-	for (Int_t i = 0; i < 175; i++) {
+	for (Int_t i = 0; i < 180; i++) {
 
 	std::rotate(random_seed.begin(), random_seed.begin() + 29, random_seed.begin() + 30);  // right-shift  
 
@@ -388,26 +399,25 @@ if (DAQ_rep_hel_bank.size() >= 120 && evNumber < 12687) {
 	}
 
 
-
 Int_t pos_accu_scaler[MAXCHAN];
 Int_t neg_accu_scaler[MAXCHAN];
 
-if (evNumber >= 12687) {
+if (eventnumbers.size() >= 120) {
 	cout << "p[1]: " << hex << p[1] << endl;
 	cout << "size of DAQ rep hel bank: " << dec << DAQ_rep_hel_bank.size() << endl;
 //	cout << "actual helicity: " << dec << DAQ_act_hel_bank[DAQ_rep_hel_bank.size()-121] << endl;
 	actual_helicity.push_back(DAQ_act_hel_bank[DAQ_rep_hel_bank.size()-121]);
 	cout << "actual helicity: " << dec << actual_helicity[DAQ_rep_hel_bank.size()-121] << endl;
 
-	for (Int_t i=1; i <= 32; i++ ) {
+	for (Int_t i=1; i <= 32; i++) {
 			if (actual_helicity[DAQ_rep_hel_bank.size()-121] == 0) {
 			neg_accu_scaler[i] += p[i]&0xffffff;
-			cout << i << " p[i] " << hex << p[i] << " neg_accu_scaler: " << neg_accu_scaler[i] << endl;
+//			cout << i << " p[i] " << hex << p[i] << " neg_accu_scaler: " << neg_accu_scaler[i] << endl;
 			negative_hel_scalers.push_back(neg_accu_scaler[i]);
 			}
 			else if (actual_helicity[DAQ_rep_hel_bank.size()-121] == 1) {
 			pos_accu_scaler[i] += p[i]&0xffffff;
-			cout << i << " p[i] " << hex << p[i] << " pos_accu_scaler: " << pos_accu_scaler[i] << endl;
+//			cout << i << " p[i] " << hex << p[i] << " pos_accu_scaler: " << pos_accu_scaler[i] << endl;
 			positive_hel_scalers.push_back(pos_accu_scaler[i]);
 			}
 	}
