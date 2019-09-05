@@ -250,14 +250,14 @@ Int_t THcHelicityScalerEvtHandler::AnalyzeBuffer(UInt_t* rdata, Bool_t onlysync)
 	cout << "evNumber:" << " " << evNumber << endl;
 
 	eventnumbers.push_back(evNumber);
-		for (Int_t i = 0; i < eventnumbers.size(); i++){
+	for (Int_t i = 0; i < eventnumbers.size(); i++){
 //		cout << "event number vector: " << eventnumbers[i] << endl;
-		}
+	}
 //	cout << "size: " << eventnumbers.size() << endl;
 
-		if (eventnumbers.size() >= 120){
+	if (eventnumbers.size() >= 120){
 //		cout << "event number after 120 windows: " << eventnumbers[120] << endl;
-		}
+	}
 	
 	Int_t nevents = (banklen-2)/32;
 	//cout << "# of helicity events in bank:" << " " << nevents << endl;
@@ -268,11 +268,11 @@ Int_t THcHelicityScalerEvtHandler::AnalyzeBuffer(UInt_t* rdata, Bool_t onlysync)
 	Int_t quartet_2[4] = {0,1,1,0}; // - + + - quartet
 
 	for (Int_t iev = 1; iev <= nevents; iev++) {  // find number of helicity events in each bank
-		Int_t nentries = 32*iev+2;
-		DAQ_rep_hel_windows[iev] = ((((p[nentries-33]>>28) & 0xff) >> 2) & 1);
-		//std::cout << "DAQ Reported Helicity:" << " " << DAQ_rep_hel_windows[iev];
-		DAQ_rep_hel_bank.push_back(DAQ_rep_hel_windows[iev]);
-		std::cout << endl;
+	  Int_t nentries = 32*iev+2;
+	  DAQ_rep_hel_windows[iev] = ((((p[nentries-33]>>28) & 0xff) >> 2) & 1);
+	  //std::cout << "DAQ Reported Helicity:" << " " << DAQ_rep_hel_windows[iev];
+	  DAQ_rep_hel_bank.push_back(DAQ_rep_hel_windows[iev]);
+	  std::cout << endl;
 	}
 
 
@@ -296,131 +296,132 @@ Int_t THcHelicityScalerEvtHandler::AnalyzeBuffer(UInt_t* rdata, Bool_t onlysync)
 	// begin incrementing where quartet is found (ex. i = 0 corresponds to scaler event = 0)
 	// 120 is the number of windows needed to create the 30-bit random seed
 	for (Int_t i = 0; i<120; i=i+4) { 
-		//cout << "DAQ Reported Helicity at window " << i << ": " << DAQ_rep_hel_bank[i] << endl;
-		random_seed.insert(random_seed.begin(), DAQ_rep_hel_bank[i]); 
-		// last event is first element in vector. So the beginning contains 
-		// bit 30 ("event" 30) and the last contains bit 1 
-		// ("event" 1 - first window of very first quartet)	
+	  //cout << "DAQ Reported Helicity at window " << i << ": " << DAQ_rep_hel_bank[i] << endl;
+	  random_seed.insert(random_seed.begin(), DAQ_rep_hel_bank[i]); 
+	  // last event is first element in vector. So the beginning contains 
+	  // bit 30 ("event" 30) and the last contains bit 1 
+	  // ("event" 1 - first window of very first quartet)	
 	}
 	
 		
-if (DAQ_rep_hel_bank.size() >= 120 && eventnumbers.size() >= 120) {
+	if (DAQ_rep_hel_bank.size() >= 120 && eventnumbers.size() >= 120) {
 
-	for (Int_t i = 0; i < 30; i++){
-	//cout << "scaler event: " << i << " random seed: " << random_seed[i] << endl;
-	}
+	  for (Int_t i = 0; i < 30; i++){
+	    //cout << "scaler event: " << i << " random seed: " << random_seed[i] << endl;
+	  }
 
-	bit1 = random_seed[0]; // corresponds to last scaler event
-	bit7 = random_seed[6];
-	bit28 = random_seed[27];
-	bit29 = random_seed[28];
-	bit30 = random_seed[29]; // corresponds to first scaler event
+	  bit1 = random_seed[0]; // corresponds to last scaler event
+	  bit7 = random_seed[6];
+	  bit28 = random_seed[27];
+	  bit29 = random_seed[28];
+	  bit30 = random_seed[29]; // corresponds to first scaler event
 
-	Int_t newbit = bit30 ^ bit29 ^ bit28 ^ bit7;
-	//cout << "new bit: " << newbit << endl;
+	  Int_t newbit = bit30 ^ bit29 ^ bit28 ^ bit7;
+	  //cout << "new bit: " << newbit << endl;
 	
-	if (newbit == 1) {
-	Int_t next_quartet[4] = {1,0,0,1};
-	for (Int_t i = 0; i < 4; i++) {
-	DAQ_pred_hel_bank.push_back(next_quartet[i]);
-	}
-	}
+	  if (newbit == 1) {
+	    Int_t next_quartet[4] = {1,0,0,1};
+	    for (Int_t i = 0; i < 4; i++) {
+	      DAQ_pred_hel_bank.push_back(next_quartet[i]);
+	    }
+	  }
 
-	else if (newbit ==0) {
-	Int_t next_quartet[4] = {0,1,1,0};
-	for (Int_t i = 0; i < 4; i++) {
-	DAQ_pred_hel_bank.push_back(next_quartet[i]);
-	}
-	}
+	  else if (newbit ==0) {
+	    Int_t next_quartet[4] = {0,1,1,0};
+	    for (Int_t i = 0; i < 4; i++) {
+	      DAQ_pred_hel_bank.push_back(next_quartet[i]);
+	    }
+	  }
 	
-	else {
-	return 0;
-	}
+	  else {
+	    return 0;
+	  }
 
   
 
 	// upper limit corresponds to # of quartets there are in the run
-	for (Int_t i = 0; i < 180; i++) {
+	  for (Int_t i = 0; i < 180; i++) {
 
-	std::rotate(random_seed.begin(), random_seed.begin() + 29, random_seed.begin() + 30);  // right-shift  
+	    std::rotate(random_seed.begin(), random_seed.begin() + 29, random_seed.begin() + 30);  // right-shift  
 
-	for (Int_t i=0; i < 30; i++) {
-	//cout << "index (scaler event): " << i << " random seed left-shifted: " << random_seed[i] << endl; 
-	}
+	    for (Int_t i=0; i < 30; i++) {
+	      //cout << "index (scaler event): " << i << " random seed left-shifted: " << random_seed[i] << endl; 
+	    }
 
-	random_seed[0] = newbit;
-	bit1 = random_seed[0];	
+	    random_seed[0] = newbit;
+	    bit1 = random_seed[0];	
 
-	bit7 = random_seed[6];
-	bit28 = random_seed[27];
-	bit29 = random_seed[28];
-	bit30 = random_seed[29]; 
+	    bit7 = random_seed[6];
+	    bit28 = random_seed[27];
+	    bit29 = random_seed[28];
+	    bit30 = random_seed[29]; 
 
-	newbit = bit30 ^ bit29 ^ bit28 ^ bit7;
+	    newbit = bit30 ^ bit29 ^ bit28 ^ bit7;
 	
-	if (newbit == 1) {
-	Int_t next_quartet[4] = {1,0,0,1};
-	for (Int_t i = 0; i < 4; i++) {
-	DAQ_pred_hel_bank.push_back(next_quartet[i]);
- 	}
-	}
+	    if (newbit == 1) {
+	      Int_t next_quartet[4] = {1,0,0,1};
+	      for (Int_t i = 0; i < 4; i++) {
+		DAQ_pred_hel_bank.push_back(next_quartet[i]);
+	      }
+	    }
 
-	else if (newbit == 0) {
-	Int_t next_quartet[4] = {0,1,1,0};
-	for (Int_t i = 0; i < 4; i++) {
-	DAQ_pred_hel_bank.push_back(next_quartet[i]);
- 	}
-	}
+	    else if (newbit == 0) {
+	      Int_t next_quartet[4] = {0,1,1,0};
+	      for (Int_t i = 0; i < 4; i++) {
+		DAQ_pred_hel_bank.push_back(next_quartet[i]);
+	      }
+	    }
 	
-	else {
-	return 0;
-	}
+	    else {
+	      return 0;
+	    }
 
-   }
+	  }
 
-	for (Int_t i = 8; i < DAQ_pred_hel_bank.size(); i++) {   // actual helicity is delayed by 8 windows (2 quartets)
-		DAQ_act_hel_bank.push_back(DAQ_pred_hel_bank[i]);
+	  for (Int_t i = 8; i < DAQ_pred_hel_bank.size(); i++) {   // actual helicity is delayed by 8 windows (2 quartets)
+	    DAQ_act_hel_bank.push_back(DAQ_pred_hel_bank[i]);
+	  }
+ 
 	}
-	
-}
 
 	// compare reported, preicted, and actual scaler helicities
+	cout << "DAQ_rep_hel_bank.size()=" << DAQ_rep_hel_bank.size() << endl;
 	for (Int_t i = 120; i < DAQ_rep_hel_bank.size(); i++){
-	cout << "event number: " << eventnumbers[i] << " scaler event: " << i << " " << "reported helicity: " << DAQ_rep_hel_bank[i] << " " << "predicted helicity: " << DAQ_pred_hel_bank[i-120] << " " << "actual helicity: " << DAQ_act_hel_bank[i-120] << endl;
+	  cout << "event number: " << eventnumbers[i] << " scaler event: " << i << " " << "reported helicity: " << DAQ_rep_hel_bank[i] << " " << "predicted helicity: " << DAQ_pred_hel_bank[i-120] << " " << "actual helicity: " << DAQ_act_hel_bank[i-120] << endl;
 	}
 
 
-Int_t pos_accu_scaler[MAXCHAN];
-Int_t neg_accu_scaler[MAXCHAN];
+	Int_t pos_accu_scaler[MAXCHAN];
+	Int_t neg_accu_scaler[MAXCHAN];
 
-// accumulating scalers based on actual helicity
-if (eventnumbers.size() > 120) {
-//	cout << "p[1]: " << hex << p[1] << endl;
-//	cout << "size of DAQ rep hel bank: " << dec << DAQ_rep_hel_bank.size() << endl;
-//	cout << "actual helicity: " << dec << DAQ_act_hel_bank[DAQ_rep_hel_bank.size()-121] << endl;
-	actual_helicity.push_back(DAQ_act_hel_bank[DAQ_rep_hel_bank.size()-121]);
-//	cout << "actual helicity: " << dec << actual_helicity[DAQ_rep_hel_bank.size()-121] << endl;
+	// accumulating scalers based on actual helicity
+	if (eventnumbers.size() > 120) {
+	  //	cout << "p[1]: " << hex << p[1] << endl;
+	  //	cout << "size of DAQ rep hel bank: " << dec << DAQ_rep_hel_bank.size() << endl;
+	  //	cout << "actual helicity: " << dec << DAQ_act_hel_bank[DAQ_rep_hel_bank.size()-121] << endl;
+	  actual_helicity.push_back(DAQ_act_hel_bank[DAQ_rep_hel_bank.size()-121]);
+	  //	cout << "actual helicity: " << dec << actual_helicity[DAQ_rep_hel_bank.size()-121] << endl;
 
-	for (Int_t i=1; i <= 32; i++) {
-			if (actual_helicity[DAQ_rep_hel_bank.size()-121] == 0) {
-			neg_accu_scaler[i] += p[i]&0xffffff;
-//			cout << i << " p[i] " << hex << p[i] << " neg_accu_scaler: " << neg_accu_scaler[i] << endl;
-			negative_hel_scalers.push_back(neg_accu_scaler[i]);
-			}
-			else if (actual_helicity[DAQ_rep_hel_bank.size()-121] == 1) {
-			pos_accu_scaler[i] += p[i]&0xffffff;
-//			cout << i << " p[i] " << hex << p[i] << " pos_accu_scaler: " << pos_accu_scaler[i] << endl;
-			positive_hel_scalers.push_back(pos_accu_scaler[i]);
-			}
+	  for (Int_t i=1; i <= 32; i++) {
+	    if (actual_helicity[DAQ_rep_hel_bank.size()-121] == 0) {
+	      neg_accu_scaler[i] += p[i]&0xffffff;
+	      //			cout << i << " p[i] " << hex << p[i] << " neg_accu_scaler: " << neg_accu_scaler[i] << endl;
+	      negative_hel_scalers.push_back(neg_accu_scaler[i]);
+	    }
+	    else if (actual_helicity[DAQ_rep_hel_bank.size()-121] == 1) {
+	      pos_accu_scaler[i] += p[i]&0xffffff;
+	      //			cout << i << " p[i] " << hex << p[i] << " pos_accu_scaler: " << pos_accu_scaler[i] << endl;
+	      positive_hel_scalers.push_back(pos_accu_scaler[i]);
+	    }
+	  }
+
 	}
-
-}
 	
 	//**************************************************************************************************
-    }
+	}
 
 
-}
+      }
 
       while(p < pnext) {
 	Int_t nskip = 0;
@@ -440,7 +441,7 @@ if (eventnumbers.size() > 120) {
       p = p+*(p-1);		// Skip to next bank
     }
 
-}
+  }
 
   if (fDebugFile) {
     *fDebugFile << "Finished with decoding.  "<<endl;
