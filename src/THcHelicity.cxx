@@ -431,6 +431,7 @@ Int_t THcHelicity::Decode( const THaEvData& evdata )
     }
   }
   fLastActualHelicity = fActualHelicity;
+  fLastReportedHelicity = fReportedHelicity;
   return 0;
 }
 

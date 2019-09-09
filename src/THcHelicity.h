@@ -33,6 +33,9 @@ public:
   virtual void   SetDebug( Int_t level );
   virtual Bool_t HelicityValid() const { return fValidHel; }
 
+  virtual Int_t GetLastActualHelicity() const { return fLastActualHelicity;}
+  virtual Int_t GetLastReportedHelicity() const { return fLastReportedHelicity;}
+
   void PrintEvent(Int_t evtnum);
 
 protected:
@@ -53,6 +56,7 @@ protected:
 
   Bool_t fFirstEvProcessed;
   Int_t fLastReportedHelicity;
+  Int_t fLastActualHelicity;
   Long64_t fFirstEvTime;
   Long64_t fLastEvTime;
   Long64_t fLastMPSTime;
@@ -94,7 +98,6 @@ protected:
   Double_t fErrorCode;
  
   Int_t fEvtype; // Current CODA event type
-  Int_t fLastActualHelicity;
   Int_t fEvNumCheck;
   Bool_t fDisabled;
  
