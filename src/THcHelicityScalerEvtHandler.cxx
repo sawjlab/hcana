@@ -23,6 +23,7 @@ To enable debugging you may try this in the setup script
 #include "THcParmList.h"
 #include "THcGlobals.h"
 #include "THaGlobals.h"
+#include "THcHelicity.h"
 #include "TNamed.h"
 #include "TMath.h"
 #include "TString.h"
@@ -262,7 +263,7 @@ Int_t THcHelicityScalerEvtHandler::AnalyzeBuffer(UInt_t* rdata, Bool_t onlysync)
 	Int_t nevents = (banklen-2)/32;
 	//cout << "# of helicity events in bank:" << " " << nevents << endl;
 	
-	Int_t DAQ_rep_hel_windows[nevents];
+	Int_t DAQ_rep_hel_windows[nevents+1];
 		
 	Int_t quartet_1[4] = {1,0,0,1}; // + - - + quartet 
 	Int_t quartet_2[4] = {0,1,1,0}; // - + + - quartet
@@ -274,7 +275,11 @@ Int_t THcHelicityScalerEvtHandler::AnalyzeBuffer(UInt_t* rdata, Bool_t onlysync)
 	  DAQ_rep_hel_bank.push_back(DAQ_rep_hel_windows[iev]);
 	  std::cout << endl;
 	}
-
+	if(fglHelicityDetector) {
+	  cout << "REP COMPARE: " << 
+	    (2*DAQ_rep_hel_windows[nevents]-1==fglHelicityDetector->GetLastReportedHelicity()?
+	     "GOOD":"BAD") << endl;
+	}
 
 
 /**
@@ -386,8 +391,16 @@ Int_t THcHelicityScalerEvtHandler::AnalyzeBuffer(UInt_t* rdata, Bool_t onlysync)
 
 	// compare reported, preicted, and actual scaler helicities
 	cout << "DAQ_rep_hel_bank.size()=" << DAQ_rep_hel_bank.size() << endl;
-	for (Int_t i = 120; i < DAQ_rep_hel_bank.size(); i++){
-	  cout << "event number: " << eventnumbers[i] << " scaler event: " << i << " " << "reported helicity: " << DAQ_rep_hel_bank[i] << " " << "predicted helicity: " << DAQ_pred_hel_bank[i-120] << " " << "actual helicity: " << DAQ_act_hel_bank[i-120] << endl;
+	//	for (Int_t i = 120; i < DAQ_rep_hel_bank.size(); i++){
+	//	  cout << "event number: " << eventnumbers[i] << " scaler event: " << i << " " << "reported helicity: " << DAQ_rep_hel_bank[i] << " " << "predicted helicity: " << DAQ_pred_hel_bank[i-120] << " " << "actual helicity: " << DAQ_act_hel_bank[i-120] << endl;
+	//	}
+	if(fglHelicityDetector) {
+	  Int_t i = DAQ_rep_hel_bank.size()-1;
+	  if (i>120) {
+	    cout << "ACT COMPARE: " << 
+	      (2*DAQ_act_hel_bank[i-120]-1==fglHelicityDetector->GetLastActualHelicity()?
+	       "GOOD":"BAD") << endl;
+	  }
 	}
 
 

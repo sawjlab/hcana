@@ -20,6 +20,7 @@
 #include "TString.h"
 #include <cstring>
 
+class THcHelicity;
 
 class THcHelicityScalerEvtHandler : public THaEvtTypeHandler {
 
@@ -40,6 +41,7 @@ public:
    virtual void SetDelayedType(int evtype);
    virtual void SetROC(Int_t roc) {fROC=roc;}
    virtual void SetBankID(Int_t bankid) {fBankID=bankid;}
+   virtual void SetHelicityDetector(THcHelicity *f) {fglHelicityDetector = f;}
 
 private:
 
@@ -99,6 +101,8 @@ private:
    ClassDef(THcHelicityScalerEvtHandler,0)  // Scaler Event handler
    Int_t quartet_1[4];  // for finding and checking quartet pattern
    Int_t quartet_2[4];
+
+   THcHelicity *fglHelicityDetector;
    
 
 };
