@@ -60,7 +60,8 @@ THaAnalysisObject::EStatus THcHelicity::Init(const TDatime& date) {
   Setup(GetName(), GetTitle());
 
   fFirstEvProcessed = kFALSE;
-  fActualHelicity = kUnknown;
+  fActualHelicity = fLastActualHelicity = fCurrentActualHelicity = kUnknown;
+  fReportedHelicity = fLastReportedHelicity = fCurrentReportedHelicity = kUnknown;
   fPredictedHelicity = kUnknown;
   fLastMPSTime = 0;
   fFoundMPS = kFALSE;
@@ -348,7 +349,7 @@ Int_t THcHelicity::Decode( const THaEvData& evdata )
 	}
 	fLastMPSTime += missed*fTIPeriod;
 	fIsNewCycle = kTRUE;
-	fLastReportedHelicity = fReportedHelicity;
+	//	fLastReportedHelicity = fReportedHelicity;
       } else {			// No missed periods.  Get helicities from rings
 	if(fNBits>=fMAXBIT) {
 	  int quartetphase = (fNCycle-fFirstCycle)%4;
@@ -395,11 +396,15 @@ Int_t THcHelicity::Decode( const THaEvData& evdata )
 	// Load the actual helicity.  Calibrate if not calibrated.
 	fActualHelicity = kUnknown;
 	LoadHelicity(fReportedHelicity, fNCycle, missed);
-	fLastReportedHelicity = fReportedHelicity;
+	//	fLastReportedHelicity = fReportedHelicity;
 	fIsNewCycle = kFALSE;
 	//	cout << fTITime/250000000.0 << " " << fNCycle << " " << fReportedHelicity << endl;
 	//	cout << fNCycle << ": " << fReportedHelicity << " "
 	//	     << fPredictedHelicity << " " << fActualHelicity << endl;
+	fLastActualHelicity = fCurrentActualHelicity;
+	fLastReportedHelicity = fCurrentReportedHelicity;
+	fCurrentActualHelicity = fActualHelicity;
+	fCurrentReportedHelicity = fReportedHelicity;
       }
       // Ignore until a MPS Is found
     } else {			// No MPS found yet
@@ -430,8 +435,6 @@ Int_t THcHelicity::Decode( const THaEvData& evdata )
       cout << "Helicity of " << fActualHelicity << " reported prematurely at cycle " << fNCycle << endl;
     }
   }
-  fLastActualHelicity = fActualHelicity;
-  fLastReportedHelicity = fReportedHelicity;
   return 0;
 }
 

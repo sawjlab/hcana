@@ -57,6 +57,8 @@ protected:
   Bool_t fFirstEvProcessed;
   Int_t fLastReportedHelicity;
   Int_t fLastActualHelicity;
+  Int_t fCurrentReportedHelicity;
+  Int_t fCurrentActualHelicity;
   Long64_t fFirstEvTime;
   Long64_t fLastEvTime;
   Long64_t fLastMPSTime;
