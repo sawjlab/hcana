@@ -139,8 +139,8 @@ protected:
 
   THcCherenkov* fCherenkov;
 
-  Int_t fTDC_RefTimeCut;
-  Int_t fADC_RefTimeCut;
+  Int_t fTDC_RefTimeCut[2];
+  Int_t fADC_RefTimeCut[2];
 
   Int_t fAnalyzePedestals;
 

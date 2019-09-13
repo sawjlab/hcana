@@ -92,7 +92,7 @@ protected:
   Int_t fdebugtrackprint;
   Int_t fdebugprintdecodeddc;
   Int_t fHMSStyleChambers;
-  Int_t fTDC_RefTimeCut;
+  Int_t fTDC_RefTimeCut[2];
 
   UInt_t fNDCTracks;
   TClonesArray* fDCTracks;     // Tracks found from stubs (THcDCTrack obj)

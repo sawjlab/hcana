@@ -119,11 +119,11 @@ void THcDC::Setup(const char* name, const char* description)
     {"dc_wire_velocity",&fWireVelocity,kDouble},
     {"dc_plane_names",&planenamelist, kString},
     {"dc_version", &fVersion, kInt, 0, optional},
-    {"dc_tdcrefcut", &fTDC_RefTimeCut, kInt, 0, 1},
+    {"dc_tdcrefcut", fTDC_RefTimeCut, kInt, 0, 1},
     {0}
   };
 
-  fTDC_RefTimeCut = 0;		// Minimum allowed reference times
+  fTDC_RefTimeCut[0] = fTDC_RefTimeCut[1] = 0; // Minimum allowed reference times
   gHcParms->LoadParmValues((DBRequest*)&list,fPrefix);
 
   if(fVersion==0) {
@@ -212,7 +212,7 @@ THaAnalysisObject::EStatus THcDC::Init( const TDatime& date )
   // maximum number of hits after setting up the detector map
   cout << " DC tdc ref time cut = " << fTDC_RefTimeCut  << endl;
   InitHitList(fDetMap, "THcRawDCHit", fDetMap->GetTotNumChan()+1,
-	      fTDC_RefTimeCut, 0);
+	      2, fTDC_RefTimeCut, 0);
 
   CreateMissReportParms(Form("%sdc",fPrefix));
 
@@ -541,7 +541,7 @@ Int_t THcDC::Decode( const THaEvData& evdata )
   if(fPresentP) {		// if this spectrometer not part of trigger
     present = *fPresentP;
   }
-  fNhits = DecodeToHitList(evdata, !present);
+  fNhits = DecodeToHitList(evdata, 0, !present);
 
 
 

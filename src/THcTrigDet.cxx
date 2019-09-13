@@ -183,17 +183,18 @@ THaAnalysisObject::EStatus THcTrigDet::Init(const TDatime& date) {
     Error(Here(here), "Error filling detectormap for %s.", EngineDID.c_str());
     return kInitError;
   }
-   DBRequest listextra[]={
-    {"_trig_tdcrefcut", &fTDC_RefTimeCut, kInt, 0, 1},
-    {"_trig_adcrefcut", &fADC_RefTimeCut, kInt, 0, 1},
+  DBRequest listextra[]={
+    {"_trig_tdcrefcut", fTDC_RefTimeCut, kInt, 0, 1},
+    {"_trig_adcrefcut", fADC_RefTimeCut, kInt, 0, 1},
     {0}
   };
-  fTDC_RefTimeCut = -1000;		// Minimum allowed reference times
-  fADC_RefTimeCut = -1000;
+  // Do we really want -1000 as the default?
+  fTDC_RefTimeCut[0] = fTDC_RefTimeCut[1] = -1000; // Minimum allowed reference times
+  fADC_RefTimeCut[0] = fADC_RefTimeCut[1] = -1000;
   gHcParms->LoadParmValues((DBRequest*)&listextra,fKwPrefix.c_str());
  // Initialize hitlist part of the class.
   // printf(" Init trig det hitlist\n");
-  InitHitList(fDetMap, "THcTrigRawHit", 200,fTDC_RefTimeCut,fADC_RefTimeCut);
+  InitHitList(fDetMap, "THcTrigRawHit", 200,2,fTDC_RefTimeCut,fADC_RefTimeCut);
   CreateMissReportParms(fKwPrefix.c_str());
 
   fPresentP = 0;
@@ -241,7 +242,7 @@ Int_t THcTrigDet::Decode(const THaEvData& evData) {
   } else if(fPresentP) {		// if this spectrometer not part of trigger
     present = *fPresentP;
   }
-  Int_t numHits = DecodeToHitList(evData, !present);
+  Int_t numHits = DecodeToHitList(evData, 0, !present);
 
   // Process each hit and fill variables.
   Int_t iHit = 0;

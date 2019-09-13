@@ -100,13 +100,13 @@ void THcHodoscope::Setup(const char* name, const char* description)
   DBRequest listextra[]={
     {"hodo_num_planes", &fNPlanes, kInt},
     {"hodo_plane_names",&planenamelist, kString},
-    {"hodo_tdcrefcut", &fTDC_RefTimeCut, kInt, 0, 1},
-    {"hodo_adcrefcut", &fADC_RefTimeCut, kInt, 0, 1},
+    {"hodo_tdcrefcut", fTDC_RefTimeCut, kInt, 0, 1},
+    {"hodo_adcrefcut", fADC_RefTimeCut, kInt, 0, 1},
     {0}
   };
   //fNPlanes = 4; 		// Default if not defined
-  fTDC_RefTimeCut = 0;		// Minimum allowed reference times
-  fADC_RefTimeCut = 0;
+  fTDC_RefTimeCut[0] = fTDC_RefTimeCut[1] = 0;		// Minimum allowed reference times
+  fADC_RefTimeCut[0] = fADC_RefTimeCut[1] = 0;
   gHcParms->LoadParmValues((DBRequest*)&listextra,prefix);
 
   cout << "Plane Name List : " << planenamelist << endl;
@@ -168,10 +168,11 @@ THaAnalysisObject::EStatus THcHodoscope::Init( const TDatime& date )
   // maximum number of hits after setting up the detector map
   // But it needs to happen before the sub detectors are initialized
   // so that they can get the pointer to the hitlist.
-  cout << " Hodo tdc ref time cut = " << fTDC_RefTimeCut << " " << fADC_RefTimeCut << endl;
+  cout << " Hodo tdc ref time cut 1 = " << fTDC_RefTimeCut[0] << " " << fADC_RefTimeCut[0] << endl;
+  cout << " Hodo tdc ref time cut 2 = " << fTDC_RefTimeCut[1] << " " << fADC_RefTimeCut[1] << endl;
 
   InitHitList(fDetMap, "THcRawHodoHit", fDetMap->GetTotNumChan()+1,
-	      fTDC_RefTimeCut, fADC_RefTimeCut);
+	      2, fTDC_RefTimeCut, fADC_RefTimeCut);
 
   EStatus status;
   // This triggers call of ReadDatabase and DefineVariables
@@ -708,7 +709,7 @@ Int_t THcHodoscope::Decode( const THaEvData& evdata )
   if(fPresentP) {		// if this spectrometer not part of trigger
     present = *fPresentP;
   }
-  fNHits = DecodeToHitList(evdata, !present);
+  fNHits = DecodeToHitList(evdata, 0, !present);
 
   //
   // GN: print event number so we can cross-check with engine

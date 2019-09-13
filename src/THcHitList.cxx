@@ -58,27 +58,52 @@ a method to ask the OO decoder what kind of module is in a given slot?
 */
 
 void THcHitList::InitHitList(THaDetMap* detmap,
-			     const char *hitclass, Int_t maxhits,
-			     Int_t tdcref_cut, Int_t adcref_cut) {
+			     const char *hitclass, Int_t maxhits, Int_t nrefcuts,
+			     Int_t *tdcref_cut, Int_t *adcref_cut) {
   cout << "InitHitList: " << hitclass << " RefTimeCuts: " << tdcref_cut << " " << adcref_cut << endl;
   fRawHitList = new TClonesArray(hitclass, maxhits);
   fRawHitClass = fRawHitList->GetClass();
   fNMaxRawHits = maxhits;
   fNRawHits = 0;
 
-  if(tdcref_cut >= 0) {
-    fTDC_RefTimeBest = kFALSE;
-    fTDC_RefTimeCut = tdcref_cut;
-  } else {
-    fTDC_RefTimeBest = kTRUE;
-    fTDC_RefTimeCut = -tdcref_cut;
-  }
-  if(adcref_cut >= 0) {
-    fADC_RefTimeBest = kFALSE;
-    fADC_RefTimeCut = adcref_cut;
-  } else {
-    fADC_RefTimeBest = kTRUE;
-    fADC_RefTimeCut = -adcref_cut;
+  fNRefTimeCuts = (nrefcuts>1?nrefcuts:1);
+  fTDC_RefTimeLowCut = new Int_t[fNRefTimeCuts];
+  fADC_RefTimeLowCut = new Int_t[fNRefTimeCuts];
+  fTDC_RefTimeBest = new Bool_t[fNRefTimeCuts];
+  fADC_RefTimeBest = new Bool_t[fNRefTimeCuts];
+  
+  if(nrefcuts < 1) {		// Defaults if no ref time cut info supplied
+    fTDC_RefTimeBest[0] = kFALSE;
+    fADC_RefTimeBest[0] = kFALSE;
+    fTDC_RefTimeLowCut[0] = 0;
+    fADC_RefTimeLowCut[0] = 0;
+  } else { 
+    for(Int_t i=0;i<fNRefTimeCuts;i++) {
+      if(tdcref_cut) {
+	if(tdcref_cut[i] >= 0) {
+	  fTDC_RefTimeBest[i] = kFALSE;
+	  fTDC_RefTimeLowCut[i] = tdcref_cut[i];
+	} else {
+	  fTDC_RefTimeBest[i] = kTRUE;
+	  fTDC_RefTimeLowCut[i] = -tdcref_cut[i];
+	}
+      } else {
+	  fTDC_RefTimeBest[i] = kFALSE;
+	  fTDC_RefTimeLowCut[i] = 0;
+      }
+      if(adcref_cut) {
+	if(adcref_cut[i] >= 0) {
+	  fADC_RefTimeBest[i] = kFALSE;
+	  fADC_RefTimeLowCut[i] = adcref_cut[i];
+	} else {
+	  fADC_RefTimeBest[i] = kTRUE;
+	  fADC_RefTimeLowCut[i] = -adcref_cut[i];
+	}
+      } else {
+	  fADC_RefTimeBest[i] = kFALSE;
+	  fADC_RefTimeLowCut[i] = 0;
+      }
+    }
   }
 
   for(Int_t i=0;i<maxhits;i++) {
@@ -183,7 +208,8 @@ multiple signal types (e.g. ADC+, ADC-, TDC+, TDC-), or multiplehits for multihi
 The hit list is sorted (by plane, counter) after filling.
 
 */
-Int_t THcHitList::DecodeToHitList( const THaEvData& evdata, Bool_t suppresswarnings ) {
+Int_t THcHitList::DecodeToHitList( const THaEvData& evdata, Int_t reftimecutindex,
+				   Bool_t suppresswarnings ) {
 
   if(!fMap) {			// Find the TI slot for ADCs
     // Assumes that all FADCs are in the same crate
@@ -263,12 +289,12 @@ Int_t THcHitList::DecodeToHitList( const THaEvData& evdata, Bool_t suppresswarni
 	  reftime = evdata.GetData(Decoder::kPulseTime,fRefIndexMaps[i].crate,
 				   fRefIndexMaps[i].slot, fRefIndexMaps[i].channel,ihit);
 	  reftime += 64*timeshift;
-	  if(reftime >= fADC_RefTimeCut) {
+	  if(reftime >= fADC_RefTimeLowCut[reftimecutindex]) {
 	    goodreftime = kTRUE;
 	    break;
 	  }
 	}
-	if(goodreftime || (nrefhits>0 && fADC_RefTimeBest)) {
+	if(goodreftime || (nrefhits>0 && fADC_RefTimeBest[reftimecutindex])) {
 	  fRefIndexMaps[i].reftime = reftime;
 	  fRefIndexMaps[i].hashit = kTRUE;
 	}
@@ -278,18 +304,18 @@ Int_t THcHitList::DecodeToHitList( const THaEvData& evdata, Bool_t suppresswarni
 					   fRefIndexMaps[i].channel);
 	fRefIndexMaps[i].hashit = kFALSE;
 	// Only take first hit in this reference channel that is bigger
-	// then fTDC_RefTimeCut
+	// then fTDC_RefTimeLowCut
 	Bool_t goodreftime=kFALSE;
 	Int_t reftime = 0;
 	for(Int_t ihit=0; ihit<nrefhits; ihit++) {
 	  reftime = evdata.GetData(fRefIndexMaps[i].crate,fRefIndexMaps[i].slot,
 				   fRefIndexMaps[i].channel,ihit);
-	  if(reftime >= fTDC_RefTimeCut) {
+	  if(reftime >= fTDC_RefTimeLowCut[reftimecutindex]) {
 	    goodreftime = kTRUE;
 	    break;
 	  }
 	}
-	if(goodreftime || (nrefhits>0 && fTDC_RefTimeBest)) {
+	if(goodreftime || (nrefhits>0 && fTDC_RefTimeBest[reftimecutindex])) {
 	    fRefIndexMaps[i].reftime = reftime;
 	    fRefIndexMaps[i].hashit = kTRUE;
 	}
@@ -356,14 +382,14 @@ Int_t THcHitList::DecodeToHitList( const THaEvData& evdata, Bool_t suppresswarni
 	  Int_t reftime=0;
 	  for(Int_t ihit=0; ihit<nrefhits; ihit++) {
 	    reftime = evdata.GetData(d->crate, d->slot, d->refchan, ihit);
-	    if(reftime >= fTDC_RefTimeCut) {
+	    if(reftime >= fTDC_RefTimeLowCut[reftimecutindex]) {
 	      goodreftime = kTRUE;
 	      break;
 	    }
 	  }
 	  // If RefTimeBest flag set, take the last hit if none of the
-	  // hits make the RefTimeCut
-	  if(goodreftime || (nrefhits>0 && fTDC_RefTimeBest)) {
+	  // hits make the RefTimeLowCut
+	  if(goodreftime || (nrefhits>0 && fTDC_RefTimeBest[reftimecutindex])) {
 	    rawhit->SetReference(signal, reftime);
 	  } else if (!suppresswarnings) {
 	    cout << "HitList(event=" << evdata.GetEvNum() << "): refchan " << d->refchan <<
@@ -451,14 +477,14 @@ Int_t THcHitList::DecodeToHitList( const THaEvData& evdata, Bool_t suppresswarni
 	  for(Int_t ihit=0; ihit<nrefhits; ihit++) {
 	    reftime = evdata.GetData(Decoder::kPulseTime, d->crate, d->slot, d->refchan, ihit);
 	    reftime += 64*timeshift;
-	    if(reftime >= fADC_RefTimeCut) {
+	    if(reftime >= fADC_RefTimeLowCut[reftimecutindex]) {
 	      goodreftime=kTRUE;
 	      break;
 	    }
 	  }
 	  // If RefTimeBest flag set, take the last hit if none of the
-	  // hits make the RefTimeCut
-	  if(goodreftime || (nrefhits>0 && fADC_RefTimeBest)) {
+	  // hits make the RefTimeLowCut
+	  if(goodreftime || (nrefhits>0 && fADC_RefTimeBest[reftimecutindex])) {
 	    rawhit->SetReference(signal, reftime);
 	  } else if (!suppresswarnings) {
 #ifndef SUPPRESSMISSINGADCREFTIMEMESSAGES

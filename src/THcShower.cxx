@@ -75,11 +75,11 @@ void THcShower::Setup(const char* name, const char* description)
     {"cal_num_layers", &fNLayers, kInt},
     {"cal_layer_names", &layernamelist, kString},
     {"cal_array",&fHasArray, kInt,0, 1},
-    {"cal_adcrefcut", &fADC_RefTimeCut, kInt, 0, 1},
+    {"cal_adcrefcut", fADC_RefTimeCut, kInt, 0, 1},
     {0}
   };
 
-  fADC_RefTimeCut = 0;
+  fADC_RefTimeCut[0] = fADC_RefTimeCut[1] = 0;
   gHcParms->LoadParmValues((DBRequest*)&list,prefix);
   fNTotLayers = (fNLayers+(fHasArray!=0?1:0));
   vector<string> layer_names = vsplit(layernamelist);
@@ -156,7 +156,7 @@ THaAnalysisObject::EStatus THcShower::Init( const TDatime& date )
   // maximum number of hits after setting up the detector map
 
   InitHitList(fDetMap, "THcRawShowerHit", fDetMap->GetTotNumChan()+1,
-	      0, fADC_RefTimeCut);
+	      2, 0, fADC_RefTimeCut);
 
   EStatus status;
   if( (status = THaNonTrackingDetector::Init( date )) )
@@ -689,7 +689,7 @@ Int_t THcShower::Decode( const THaEvData& evdata )
   if(fPresentP) {		// if this spectrometer not part of trigger
     present = *fPresentP;
   }
-  Int_t nhits = DecodeToHitList(evdata, !present);
+  Int_t nhits = DecodeToHitList(evdata, 0, !present);
   
   fEvent = evdata.GetEvNum();
 

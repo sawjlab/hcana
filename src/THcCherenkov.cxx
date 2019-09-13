@@ -161,7 +161,7 @@ THaAnalysisObject::EStatus THcCherenkov::Init( const TDatime& date )
   // Should probably put this in ReadDatabase as we will know the
   // maximum number of hits after setting up the detector map
   InitHitList(fDetMap, "THcCherenkovHit", fDetMap->GetTotNumChan()+1,
-	      0, fADC_RefTimeCut);
+	      2, 0, fADC_RefTimeCut);
 
   THcHallCSpectrometer *app=dynamic_cast<THcHallCSpectrometer*>(GetApparatus());
    if(  !app ||
@@ -236,7 +236,7 @@ Int_t THcCherenkov::ReadDatabase( const TDatime& date )
     {"_adcTimeWindowMax", fAdcTimeWindowMax, kDouble, (UInt_t) fNelem,1},
     {"_adc_tdc_offset",   &fAdcTdcOffset,     kDouble, 0, 1},
     {"_region",           &fRegionValue[0],   kDouble,  (UInt_t) fRegionsValueMax},
-    {"_adcrefcut",        &fADC_RefTimeCut,   kInt,    0, 1},
+    {"_adcrefcut",        fADC_RefTimeCut,    kInt,    0, 1},
     {0}
   };
   for (Int_t i=0;i<fNelem;i++) {
@@ -245,7 +245,7 @@ Int_t THcCherenkov::ReadDatabase( const TDatime& date )
   }
   fDebugAdc = 0; // Set ADC debug parameter to false unless set in parameter file
   fAdcTdcOffset = 0.0;
-  fADC_RefTimeCut = 0;
+  fADC_RefTimeCut[0] = fADC_RefTimeCut[1] = 0;
 
   gHcParms->LoadParmValues((DBRequest*)&list, prefix.c_str());
 
@@ -383,7 +383,7 @@ Int_t THcCherenkov::Decode( const THaEvData& evdata )
   if(fPresentP) {		// if this spectrometer not part of trigger
     present = *fPresentP;
   }
-  fNhits = DecodeToHitList(evdata, !present);
+  fNhits = DecodeToHitList(evdata, 0, !present);
 
   if(gHaCuts->Result("Pedestal_event")) {
     AccumulatePedestals(fRawHitList);

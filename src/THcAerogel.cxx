@@ -175,7 +175,7 @@ THaAnalysisObject::EStatus THcAerogel::Init( const TDatime& date )
   // Should probably put this in ReadDatabase as we will know the
   // maximum number of hits after setting up the detector map
   InitHitList(fDetMap, "THcAerogelHit", fDetMap->GetTotNumChan()+1,
-	      0, fADC_RefTimeCut);
+	      2, 0, fADC_RefTimeCut);
 
  THcHallCSpectrometer *app=dynamic_cast<THcHallCSpectrometer*>(GetApparatus());
    if(  !app ||
@@ -320,7 +320,7 @@ Int_t THcAerogel::ReadDatabase( const TDatime& date )
     {"aero_neg_gain",         fNegGain,           kDouble, (UInt_t) fNelem},
     {"aero_tdc_offset",       &fTdcOffset,        kInt,    0,               optional},
     {"aero_region",           &fRegionValue[0],   kDouble, (UInt_t) fRegionsValueMax},
-    {"aero_adcrefcut",        &fADC_RefTimeCut,   kInt,    0, 1},
+    {"aero_adcrefcut",        fADC_RefTimeCut,    kInt,    0, 1},
     {0}
   };
 
@@ -334,7 +334,7 @@ Int_t THcAerogel::ReadDatabase( const TDatime& date )
   fSixGevData = 0; // Set 6 GeV data parameter to false unless set in parameter file
   fDebugAdc   = 0; // Set ADC debug parameter to false unless set in parameter file
   fAdcTdcOffset = 0.0;
-  fADC_RefTimeCut = 0;
+  fADC_RefTimeCut[0] = fADC_RefTimeCut[1] = 0;
 
   gHcParms->LoadParmValues((DBRequest*)&list, prefix);
 
@@ -603,7 +603,7 @@ Int_t THcAerogel::Decode( const THaEvData& evdata )
   if(fPresentP) {		// if this spectrometer not part of trigger
     present = *fPresentP;
   }
-  fNhits = DecodeToHitList(evdata, !present);
+  fNhits = DecodeToHitList(evdata, 0, !present);
 
   if (fSixGevData) {
     if(gHaCuts->Result("Pedestal_event")) {
