@@ -278,7 +278,7 @@ Int_t THcHelicityScalerEvtHandler::AnalyzeBuffer(UInt_t* rdata, Bool_t onlysync)
 	if(fglHelicityDetector) {
 	  cout << "REP COMPARE: " << 
 	    (2*DAQ_rep_hel_windows[nevents]-1==fglHelicityDetector->GetLastReportedHelicity()?
-	     "GOOD":"BAD") << endl;
+	     "GOOD":"BAD") << " " << nevents << endl;
 	}
 
 
