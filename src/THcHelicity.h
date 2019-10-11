@@ -54,6 +54,9 @@ protected:
 
   Double_t fTIPeriod;		// Reversal period in TI time units
 
+  Double_t fPeriodCheck;
+  Double_t fCycle;
+
   Bool_t fFirstEvProcessed;
   Int_t fLastReportedHelicity;
   Int_t fLastActualHelicity;

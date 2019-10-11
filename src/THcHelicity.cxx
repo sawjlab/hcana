@@ -176,6 +176,8 @@ Int_t THcHelicity::DefineVariables( EMode mode )
     { "helrep",   "reported helicity for event",           "fReportedHelicity" },
     { "helpred",  "predicted reported helicity for event", "fPredictedHelicity" },
     { "mps", "In MPS blanking period", "fMPS"},
+    { "pcheck", "Period check", "fPeriodCheck"},
+    { "cycle", "Helicity Cycle", "fCycle"},
     { 0 }
   };
   cout << "Calling THcHelicity DefineVarsFromList" << endl;
@@ -287,6 +289,8 @@ Int_t THcHelicity::Decode( const THaEvData& evdata )
     Int_t missed = 0;
     //    Double_t elapsed_time = (fTITime - fFirstEvTime)/250000000.0;
     if(fIsMPS) {
+      fPeriodCheck = fmod(fTITime/fTIPeriod,1.0);
+      fCycle = (fTITime/fTIPeriod);
       fActualHelicity = kUnknown;
       fPredictedHelicity = kUnknown;
       if(fFoundMPS) {
