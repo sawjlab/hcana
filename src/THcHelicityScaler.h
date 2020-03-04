@@ -80,6 +80,22 @@ private:
   Double_t fTimeAsymmetry;
   Double_t fTriggerAsymmetry;
 
+  // For quartet by quartet asmmetries
+  Bool_t fHaveCycle[4];
+  Double_t *fChargeCycle[4];
+  Double_t fTimeCycle[4];
+  Int_t fFirstHelicity;
+  Double_t *fChargeSum;
+  Double_t fTimeSum;
+  Double_t *fAsymmetrySum;
+  Double_t *fAsymmetrySum2;
+  Int_t *fAsymmetryCount;
+  Int_t *fBCMtoScalerIndex;
+  Double_t fImin;
+  Int_t fIminBCM_index;
+  Int_t fClockIndex;
+  Double_t fClockFreq;
+
   std::vector<UInt_t*> fDelayedEvents;
   Int_t fROC;
   Int_t fNScalerChannels;	// Number of scaler channels/event

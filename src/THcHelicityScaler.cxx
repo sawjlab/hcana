@@ -41,15 +41,6 @@
 using namespace std;
 using namespace Decoder;
 
-static const UInt_t ICOUNT    = 1;
-static const UInt_t IRATE     = 2;
-static const UInt_t ICURRENT = 3;
-static const UInt_t ICHARGE   = 4;
-static const UInt_t ITIME   = 5;
-static const UInt_t ICUT = 6;
-static const UInt_t MAXCHAN   = 32;
-static const UInt_t defaultDT = 4;
-
 THcHelicityScaler::THcHelicityScaler(const char *name, const char* description)
   : THaEvtTypeHandler(name,description),
     fBankID(9801),
@@ -115,30 +106,23 @@ Int_t THcHelicityScaler::End( THaRunBase* )
   //  cout << " ---------------------- " << endl;
 
   // Compute Charge Asymmetries
-  std::map<std::string, Int_t> bcmindex;
-  bcmindex["BCM1"] = 0;
-  bcmindex["BCM2"] = 2;
-  //  bcmindex["Unser"] = 6;
-  bcmindex["BCM4A"] = 10;
-  bcmindex["BCM4B"] = 4;
-  bcmindex["BCM4C"] = 12;
-  //  bcmindex["1MHz"] = 8;
-  Int_t clockindex=8;
-  Double_t clockfreq=1000000.0;
-  Double_t pclock = fHScalers[0][clockindex];
-  Double_t mclock = fHScalers[1][clockindex];
-  cout << " -- Beam Charge Asymmetries -- " << endl;
+
+  Double_t pclock = fHScalers[0][fClockIndex];
+  Double_t mclock = fHScalers[1][fClockIndex];
+  cout << endl << "---------------------- Beam Charge Asymmetries ---------------------- " << endl;
+  cout << "  BCM        Total     Charge        Beam ON     Beam ON      Asymmetry" << endl;
+  cout << " Name       Charge    Asymmetry       Charge    Asymmetry        Error"    << endl;
   for(Int_t i=0;i<fNumBCMs;i++) {
-    if(bcmindex.find(fBCM_Name[i]) != bcmindex.end()) {
-      Int_t index=bcmindex[fBCM_Name[i]];
+    Int_t index = fBCMtoScalerIndex[i];
+    if(index>=0) {
       Double_t pcounts = fHScalers[0][index];
       Double_t mcounts = fHScalers[1][index];
       //      cout << index << " " << fBCM_Name[i] << " " << pcounts << " " << mcounts
       //	   << " " << fBCM_Gain[i]
       //      	   << " " << fBCM_Offset[i] << endl;
-      Double_t pcharge = (pcounts - (pclock/clockfreq)*fBCM_Offset[i])
+      Double_t pcharge = (pcounts - (pclock/fClockFreq)*fBCM_Offset[i])
 	/fBCM_Gain[i];
-      Double_t mcharge = (mcounts - (mclock/clockfreq)*fBCM_Offset[i])
+      Double_t mcharge = (mcounts - (mclock/fClockFreq)*fBCM_Offset[i])
 	/fBCM_Gain[i];
       fCharge[i] = pcharge+mcharge;
       if(fCharge[i]>0.0) {
@@ -146,22 +130,37 @@ Int_t THcHelicityScaler::End( THaRunBase* )
       } else {
 	fChargeAsymmetry[i] = 0.0;
       }
-      printf("%6s %12.2f %12.8f\n",fBCM_Name[i].c_str(),fCharge[i],fChargeAsymmetry[i]);
+      Double_t asy, asyerr;
+      if(fAsymmetryCount[i] <= 1) {
+	asy = -100;
+	asyerr = 0.0;
+      } else {
+	asy = fAsymmetrySum[i]/fAsymmetryCount[i];
+	if(fAsymmetrySum2[i] >= fAsymmetryCount[i]*asy*asy) {
+	  asyerr = TMath::Sqrt((fAsymmetrySum2[i] -
+					 fAsymmetryCount[i]*asy*asy) /
+					(fAsymmetryCount[i]*(fAsymmetryCount[i]-1)));
+	} else {
+	  asyerr = 0.0;
+	}
+      }
+      printf("%6s %12.2f %12.8f %12.2f %12.8f %12.8f\n",fBCM_Name[i].c_str(),fCharge[i],
+	     fChargeAsymmetry[i],fChargeSum[i],asy,asyerr);
     }
   }
-  fTime = (pclock+mclock)/clockfreq;
+  fTime = (pclock+mclock)/fClockFreq;
   if(pclock+mclock>0) {
     fTimeAsymmetry = (pclock-mclock)/(pclock+mclock);
   } else {
     fTimeAsymmetry = 0.0;
   }
-  printf("TIME(s)%12.2f %12.8f\n",fTime,fTimeAsymmetry);
+  printf("TIME(s)%12.2f %12.8f %12.2f\n",fTime, fTimeAsymmetry, fTimeSum);
   if(fNTriggersPlus+fNTriggersMinus > 0) {
     fTriggerAsymmetry = ((Double_t) (fNTriggersPlus-fNTriggersMinus))/(fNTriggersPlus+fNTriggersMinus);
   } else {
     fTriggerAsymmetry = 0.0;
   }
-  cout << " ----------------------------- " << endl;
+  cout << endl << "--------------------------------------------------------------------- " << endl;
   return 0;
 }
 
@@ -173,8 +172,12 @@ Int_t THcHelicityScaler::ReadDatabase(const TDatime& date )
 
   fNumBCMs = 0;
   string bcm_namelist;
+  fImin = 2.5;			// Minimum current to calculate a charge asymmetry
+  fIminBCM_index = 0;		// Which BCM to use
   DBRequest list[]={
 		    {"NumBCMs",&fNumBCMs, kInt, 0, 1},
+		    {"Imin_charge_asymmetry", &fImin, kDouble, 0, 1},
+		    {"Imin_BCM", &fIminBCM_index, kInt, 0, 1},
 		    {"BCM_Names",     &bcm_namelist,       kString},
 		    {0}
   };
@@ -189,6 +192,25 @@ Int_t THcHelicityScaler::ReadDatabase(const TDatime& date )
     };
     gHcParms->LoadParmValues((DBRequest*)&list2, prefix);
     fBCM_Name = vsplit(bcm_namelist);
+  }
+  std::map<std::string, Int_t> bcmnametoscalerindex;
+  bcmnametoscalerindex["BCM1"] = 0;
+  bcmnametoscalerindex["BCM2"] = 2;
+  bcmnametoscalerindex["Unser"] = 6;
+  bcmnametoscalerindex["BCM4A"] = 10;
+  bcmnametoscalerindex["BCM4B"] = 4;
+  bcmnametoscalerindex["BCM4C"] = 12;
+  //  bcmindex["1MHz"] = 8;
+  fClockIndex=8;
+  fClockFreq=1000000.0;
+  fBCMtoScalerIndex = new Int_t[fNumBCMs];
+  for(Int_t i=0;i<fNumBCMs;i++) {
+    if(bcmnametoscalerindex.find(fBCM_Name[i]) != bcmnametoscalerindex.end()) {
+      Int_t index=bcmnametoscalerindex[fBCM_Name[i]];
+      fBCMtoScalerIndex[i] = index;
+    } else {
+      fBCMtoScalerIndex[i] = -1;
+    }
   }
   
   return kOK;
@@ -402,6 +424,7 @@ Int_t THcHelicityScaler::AnalyzeHelicityScaler(UInt_t *p)
 	actualhelicity = -actualhelicity;
       }
     }
+    quartetphase = (quartetphase+1)%4;
 #else
     actualhelicity = (fRingSeed_actual&1)?+1:-1;
     if(quartetphase == 1 || quartetphase == 2) {
@@ -415,10 +438,47 @@ Int_t THcHelicityScaler::AnalyzeHelicityScaler(UInt_t *p)
   if(actualhelicity!=0) {
     Int_t hindex = (actualhelicity>0)?0:1;
     (actualhelicity>0)?(fNTriggersPlus++):(fNTriggersMinus++);
+    Int_t countarray[fNScalerChannels];
     for(Int_t i=0;i<fNScalerChannels;i++) {
       Int_t count = p[i]&0xFFFFFF; // Bottom 24 bits
+      countarray[i] = count;
       fHScalers[hindex][i] += count;
       fScalerSums[i] += count;
+    }
+    // Compute current
+    //
+    Double_t time = countarray[fClockIndex]/fClockFreq;
+    Double_t current = (countarray[fBCMtoScalerIndex[fIminBCM_index]]
+			/time-fBCM_Offset[fIminBCM_index])
+      /fBCM_Gain[fIminBCM_index];
+    //    cout << "Time: " << time << "  Current: " << current << endl;
+    if(quartetphase==0) {
+      fHaveCycle[0] = fHaveCycle[1] = fHaveCycle[2] = fHaveCycle[3] = kFALSE;
+    }
+    if(current >= fImin && (quartetphase==0 || fHaveCycle[max(quartetphase-1,0)])) {
+      fHaveCycle[quartetphase] = kTRUE;
+      for(Int_t i=0;i<fNumBCMs;i++) {
+	Int_t index = fBCMtoScalerIndex[i];
+	Double_t charge = (countarray[index]
+			   -time*fBCM_Offset[i])/fBCM_Gain[i];
+	fTimeCycle[quartetphase] = time;
+	fChargeCycle[quartetphase][i] = charge;
+      }
+    }
+    //    cout << quartetphase << " " << fHaveCycle[0] << " " << fHaveCycle[1] << " " << fHaveCycle[2] << " " << fHaveCycle[3] << endl;
+    if(quartetphase == 3 && fHaveCycle[3]) {	// Compute charge asymmetries for this quartet
+      for(Int_t i=0;i<fNumBCMs;i++) {
+	Double_t asy = actualhelicity*(fChargeCycle[0][i]+fChargeCycle[3][i]
+			-fChargeCycle[1][i]-fChargeCycle[2][i]) /
+	  (fChargeCycle[0][i]+fChargeCycle[3][i]+fChargeCycle[1][i]+fChargeCycle[2][i]);
+	fChargeSum[i] += fChargeCycle[0][i]+fChargeCycle[1][i]
+	  +fChargeCycle[2][i]+fChargeCycle[3][i];
+	fAsymmetrySum[i] += asy;
+	fAsymmetrySum2[i] += asy*asy;
+	fAsymmetryCount[i]++;
+      }
+      fTimeSum += fTimeCycle[0]+fTimeCycle[1]
+	  +fTimeCycle[2]+fTimeCycle[3];
     }
   }
   return(0);
@@ -475,13 +535,33 @@ THaAnalysisObject::EStatus THcHelicityScaler::Init(const TDatime& date)
   fScalerSums = new Double_t[fNScalerChannels];
   fAsymmetry = new Double_t[fNScalerChannels];
   fAsymmetryError = new Double_t[fNScalerChannels];
+  for(Int_t i=0;i<4;i++) {
+    fChargeCycle[i] = new Double_t[fNScalerChannels];
+    fHaveCycle[i] = kFALSE;
+    for(Int_t j=0;j<fNScalerChannels;j++) {
+      fChargeCycle[i][j] = 0.0;
+    }
+    fTimeCycle[i] = 0.0;
+  }
+  fFirstHelicity = 0;		// Helicity of first cycle in quartet
   for(Int_t i=0;i<fNScalerChannels;i++) {
     fHScalers[0][i] = 0.0;
     fHScalers[1][i] = 0.0;
-    fScalerSums[0] = 0.0;
-    fAsymmetry[0] = 0.0;
-    fAsymmetryError[0] = 0.0;
+    fScalerSums[i] = 0.0;
+    fAsymmetry[i] = 0.0;
+    fAsymmetryError[i] = 0.0;
   }
+  fChargeSum = new Double_t[fNScalerChannels];
+  fAsymmetrySum = new Double_t[fNScalerChannels];
+  fAsymmetrySum2 = new Double_t[fNScalerChannels];
+  fAsymmetryCount = new Int_t[fNScalerChannels];
+  for(Int_t i=0;i<fNumBCMs;i++) {
+    fChargeSum[i] = 0.0;
+    fAsymmetrySum[i] = 0.0;
+    fAsymmetrySum2[i] = 0.0;
+    fAsymmetryCount[i] = 0;
+  }
+  fTimeSum = 0.0;
 
   fCharge = new Double_t[fNumBCMs];
   fChargeAsymmetry = new Double_t[fNumBCMs];
@@ -528,3 +608,24 @@ void THcHelicityScaler::MakeParms()
 }
 
 ClassImp(THcHelicityScaler)
+
+/*
+
+Better charge asymmetry calc.
+
+Compute charge asymmetry by pairs.  Require average current of
+pair to be > i_min
+
+error = sqrt( sum_i  (xi-xave)^2) / sqrt(N*N-1)
+s(xi^2) - 2 * s(xi) xave + N xave^2
+s(xi^2) - N xave*xave
+
+xave = s(xi)/N
+s(xi^2) - 2 s(xi) * s(xi)/N + N (s(xi)/N)^2
+s(xi^2) - 2 s(xi)^2 / N + s(xi)^2/N
+s(xi^2) - s(xi)^2 / N
+
+Accumulate sum of xi, xi**2 
+sqrt( sxi2 - sxi*sxi/N ) /sqrt(N*(N-1))
+
+*/
